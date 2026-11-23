@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Spin-dle curator</title>
+<style>
+/* VOICE: a quiet workbench: practical, fast, nothing decorative
+   IDEA: a museum registrar's review table
+   PICTURE: the object under review, with its five game views laid out like contact prints
+   COLOUR and TYPE: the game's paper, ink and gold; system sans throughout
+   LAYOUT: one column: big view, five thumbnails, tweak buttons, the entry form, decision buttons */
+:root{color-scheme:light dark;
+  --bg:light-dark(#f4f1ea,#121315);--card:light-dark(#fffdf8,#1c1e21);--ink:light-dark(#1d1f22,#e8eaed);
+  --mute:light-dark(#62605a,#a3a29c);--rule:light-dark(#d6d0c4,#3a3c40);--acc:light-dark(#9a6b12,#e0b257);
+  --good:light-dark(#1d7a5c,#45c08f);--bad:light-dark(#c23b30,#ff8277);--plinth:light-dark(#ebe5d8,#191b1e)}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+h1{font-size:20px;margin:0}
+h2{font-size:17px;margin:0}
+.tabs{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+.tab{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--rule);background:var(--card);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.tab.on{background:var(--acc);border-color:var(--acc);color:var(--card)}
+.btn{min-height:44px;padding:0 16px;font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:var(--card);cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--acc)}
+.btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.sm{min-height:38px;padding:0 12px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--mute);font-size:13px;margin:0}
+.view{position:relative;height:min(56vh,440px);border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,var(--card),var(--plinth) 75%);border:1px solid var(--rule)}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mute);text-align:center;padding:20px;pointer-events:none}
+.thumbs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.thumb{padding:0;border:2px solid var(--rule);border-radius:8px;background:radial-gradient(ellipse at 50% 35%,var(--card),var(--plinth) 75%);cursor:pointer;overflow:hidden;display:flex;flex-direction:column;color:var(--mute);font:inherit;font-size:11px}
+.thumb img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.thumb span{padding:2px 0 4px}
+.thumb.on{border-color:var(--acc);color:var(--ink)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tools b{font-size:13px;color:var(--mute);font-weight:600;margin-right:4px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--mute)}
+input[type=text],input[type=password],textarea,select{font:16px/1.4 inherit;font-family:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:80px;resize:vertical}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--card);cursor:pointer;text-align:left;font:inherit;color:var(--ink);width:100%}
+.item small{color:var(--mute)}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--acc);color:var(--card);white-space:nowrap}
+.badge.free{background:var(--rule);color:var(--ink)}
+.note{font-size:13px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--acc) 12%,var(--card));border:1px solid color-mix(in srgb,var(--acc) 40%,var(--rule));margin:0}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 16px);left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;font-weight:600;color:#fff;background:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20;max-width:92vw}
+.acts{position:sticky;bottom:0;z-index:5;background:var(--card);padding:10px 0 max(10px,env(safe-area-inset-bottom));margin-bottom:-14px;border-top:1px solid var(--rule)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:520px){.grid2{grid-template-columns:minmax(0,1fr)}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Spin-dle curator</h1>
+    <div class="row"><button class="btn" id="push" disabled>Save to site</button><button class="btn ghost sm" id="setBtn">Settings</button></div>
+  </header>
+  <p class="muted" id="summary" style="margin-top:8px">Loading…</p>
+  <div class="tabs"><button class="tab on" data-t="review">Review</button><button class="tab" data-t="add">Add objects</button><button class="tab" data-t="pub">Published</button></div>
+
+  <section id="settings" class="card" hidden>
+    <h2>Settings</h2>
+    <p class="muted">Saved only in this browser. The GitHub token needs <b>Contents: Read and write</b> on your Hyperlinked repo only (a fine-grained token). The Smithsonian key is optional and only used for browsing the catalog.</p>
+    <label>GitHub token<input type="password" id="sToken" autocomplete="off"></label>
+    <div class="grid2">
+      <label>Repository owner<input type="text" id="sOwner"></label>
+      <label>Repository<input type="text" id="sRepo"></label>
+      <label>Branch<input type="text" id="sBranch"></label>
+      <label>Data file<input type="text" id="sPath"></label>
+    </div>
+    <label>Smithsonian api.data.gov key (optional)<input type="password" id="sKey" autocomplete="off"></label>
+    <div class="row"><button class="btn" id="sSave">Save and reload</button><a class="btn ghost sm" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Make a GitHub token</a><a class="btn ghost sm" href="https://api.data.gov/signup/" target="_blank" rel="noopener">Get a Smithsonian key</a></div>
+  </section>
+
+  <section id="pReview">
+    <div id="empty" class="card" hidden><h2>Nothing to review</h2><p class="muted">Add some objects first: paste links from the Smithsonian's CC0 3D page, or browse the catalog.</p><div class="row"><button class="btn" data-go="add">Add objects</button></div></div>
+    <div id="rev" class="card" hidden>
+      <div class="row" style="justify-content:space-between"><div><h2 id="rTitle">…</h2><p class="muted" id="rSub"></p></div><a class="btn ghost sm" id="rLink" target="_blank" rel="noopener">Open at the Smithsonian</a></div>
+      <div class="view"><canvas id="cv"></canvas><div class="status" id="rStatus">Loading…</div></div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="tools" id="angleTools"><b id="angleLbl">This view:</b><button class="btn ghost sm" data-a="yaw-">⟲ Turn</button><button class="btn ghost sm" data-a="yaw+">Turn ⟳</button><button class="btn ghost sm" data-a="elev+">Look from higher</button><button class="btn ghost sm" data-a="elev-">Look from lower</button><button class="btn ghost sm" data-a="reset">Reset view</button></div>
+      <div class="tools"><b>Whole object:</b><button class="btn ghost sm" data-f="0">Tip forward</button><button class="btn ghost sm" data-f="2">Tip sideways</button><button class="btn ghost sm" data-f="1">Spin 90°</button><button class="btn ghost sm" data-f="r">Undo tips</button></div>
+      <label>Name shown in the game<input type="text" id="fName"></label>
+      <label>Also accept (one per line; close misspellings are accepted automatically)<textarea id="fAlias" placeholder="Mammoth&#10;Woolly mammoth"></textarea></label>
+      <div class="row"><label style="flex:1">Try a guess<input type="text" id="fTest" placeholder="Type what a player might type" autocomplete="off" autocapitalize="off" spellcheck="false"></label></div>
+      <p class="muted" id="fTestOut">&nbsp;</p>
+      <label>Hint shown on the last view (museum · date)<input type="text" id="fHint"></label>
+      <label>Fun fact shown at the end<textarea id="fFact"></textarea></label>
+      <label>Use it for<select id="fUse"><option value="daily">Daily queue</option><option value="free">Free play only</option></select><span class="muted" style="font-weight:400">Daily objects join free play once their day has passed.</span></label>
+      <div class="row acts" id="newActs"><button class="btn" id="aPub">Publish</button><button class="btn bad" id="aSkip">Skip forever</button><button class="btn ghost" id="aLater">Later</button></div>
+      <div class="row acts" id="editActs" hidden><button class="btn" id="aSave">Save changes</button><button class="btn bad" id="aRemove">Remove from game</button><button class="btn ghost" id="aCancel">Cancel</button></div>
+    </div>
+  </section>
+
+  <section id="pAdd" hidden>
+    <div class="card">
+      <h2>Paste links</h2>
+      <p class="muted">Browse <a href="https://3d.si.edu/cc0" target="_blank" rel="noopener">3d.si.edu/cc0</a> (everything there is free to use), copy object links, and paste one or many here.</p>
+      <textarea id="paste" placeholder="https://3d.si.edu/object/3d/..."></textarea>
+      <div class="row"><button class="btn" id="addPaste">Add to review</button></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h2>Browse the Smithsonian catalog</h2>
+      <p class="muted" id="browseNote">Loads objects that have 3D models, 40 at a time, skipping any you've published or skipped. Needs the Smithsonian key in Settings.</p>
+      <label class="row" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="onlyCc0" checked style="width:20px;height:20px"> Only objects marked CC0 (free to use)</label>
+      <div class="row"><button class="btn" id="browse">Load more from the catalog</button></div>
+      <p class="muted" id="browseOut"></p>
+    </div>
+  </section>
+
+  <section id="pPub" hidden>
+    <div class="list" id="pubList"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script type="module">
+import {Viewer, docTitle} from '../viewer.js';
+import {match} from '../match.js';
+
+const $=id=>document.getElementById(id);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=new Date().toLocaleDateString('en-CA');
+const addDays=(d,n)=>{const t=new Date(d+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
+const prettyDate=d=>new Date(d+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+const UUID=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const STAGES=['1 · End-on','2 · Side-on','3 · Clay','4 · Colour','5 · Spin'];
+function toast(m,ms=2200){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,ms)}
+
+/* ---------- settings ---------- */
+const S=Object.assign({token:'',owner:'joshbertindesign-byte',repo:'Hyperlinked',branch:'main',path:'spin/objects.json',siKey:''},store.get('spincurate-settings')||{});
+$('sToken').value=S.token;$('sOwner').value=S.owner;$('sRepo').value=S.repo;$('sBranch').value=S.branch;$('sPath').value=S.path;$('sKey').value=S.siKey;
+$('setBtn').onclick=()=>{$('settings').hidden=!$('settings').hidden};
+$('sSave').onclick=()=>{store.set('spincurate-settings',{token:$('sToken').value.trim(),owner:$('sOwner').value.trim(),repo:$('sRepo').value.trim(),branch:$('sBranch').value.trim()||'main',path:$('sPath').value.trim(),siKey:$('sKey').value.trim()});location.reload()};
+
+/* ---------- GitHub data file ---------- */
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+const b64enc=s=>{const b=new TextEncoder().encode(s);let out='';for(let i=0;i<b.length;i+=0x8000)out+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(out)};
+const ghUrl=()=>`https://api.github.com/repos/${S.owner}/${S.repo}/contents/${S.path}`;
+const ghHead=()=>Object.assign({Accept:'application/vnd.github+json'},S.token?{Authorization:'Bearer '+S.token}:{});
+async function ghGet(){
+  const r=await fetch(ghUrl()+'?ref='+encodeURIComponent(S.branch)+'&t='+Date.now(),{headers:ghHead(),cache:'no-store'});
+  if(!r.ok)throw new Error(r.status===404?'Data file not found. Check Settings.':r.status===401?'GitHub token was rejected.':'GitHub error '+r.status);
+  const j=await r.json();
+  return {sha:j.sha,data:JSON.parse(b64dec(j.content))};
+}
+async function ghPut(data,sha,message){
+  const r=await fetch(ghUrl(),{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHead()),body:JSON.stringify({message,content:b64enc(JSON.stringify(data,null,1)+'\n'),sha,branch:S.branch})});
+  if(!r.ok){const t=await r.text();throw new Error(r.status===409?'The file changed on GitHub. Try again.':r.status===403||r.status===401?'GitHub refused the save. Check the token has write access to this repo.':'GitHub error '+r.status+': '+t.slice(0,120))}
+  return (await r.json()).content.sha;
+}
+
+/* ---------- pending changes (saved in one commit, so GitHub Pages isn't rebuilt for every object) ---------- */
+let remote={sha:null,data:{version:1,objects:[],skipped:[]}};
+let pending=store.get('spincurate-pending')||[];
+let inbox=store.get('spincurate-inbox')||[];
+const savePending=()=>{store.set('spincurate-pending',pending);refresh()};
+const saveInbox=()=>store.set('spincurate-inbox',inbox);
+function nextDay(objs){
+  const days=objs.map(o=>o.day).filter(Boolean).sort(), tomorrow=addDays(today,1);
+  const c=days.length?addDays(days[days.length-1],1):tomorrow;
+  return c<tomorrow?tomorrow:c;
+}
+function applyOps(base,ops){
+  const d=JSON.parse(JSON.stringify(base));d.objects=d.objects||[];d.skipped=d.skipped||[];
+  for(const op of ops){
+    if(op.op==='publish'||op.op==='update'){
+      const o=JSON.parse(JSON.stringify(op.obj)),use=o.use;delete o.use;
+      const i=d.objects.findIndex(x=>x.id===o.id),prev=i>=0?d.objects[i]:null;
+      if(use==='daily')o.day=prev&&prev.day?prev.day:nextDay(d.objects);else delete o.day;
+      if(i>=0)d.objects[i]=o;else d.objects.push(o);
+      d.skipped=d.skipped.filter(x=>x!==o.id);
+    }else if(op.op==='remove')d.objects=d.objects.filter(o=>o.id!==op.id);
+    else if(op.op==='skip'&&!d.skipped.includes(op.id))d.skipped.push(op.id);
+  }
+  return d;
+}
+const working=()=>applyOps(remote.data,pending);
+const known=()=>{const w=working();return new Set([...w.objects.map(o=>o.id),...w.skipped])};
+$('push').onclick=async()=>{
+  if(!pending.length)return;
+  if(!S.token){$('settings').hidden=false;return toast('Add a GitHub token in Settings first')}
+  $('push').disabled=true;$('push').textContent='Saving…';
+  try{
+    const latest=await ghGet();
+    const data=applyOps(latest.data,pending);
+    const pubs=pending.filter(p=>p.op==='publish').length,skips=pending.filter(p=>p.op==='skip').length,eds=pending.length-pubs-skips;
+    const msg=`Spin-dle: ${[pubs&&pubs+' published',eds&&eds+' edited or removed',skips&&skips+' skipped'].filter(Boolean).join(', ')}`;
+    const sha=await ghPut(data,latest.sha,msg);
+    remote={sha,data};pending=[];savePending();
+    toast('Saved. The game updates in a minute or two.',3500);
+  }catch(e){toast(e.message,5000)}
+  refresh();
+};
+
+/* ---------- summary + tabs ---------- */
+function refresh(){
+  const w=working(),days=w.objects.map(o=>o.day).filter(Boolean).sort(),last=days[days.length-1];
+  const ahead=last&&last>=today?Math.round((Date.parse(last)-Date.parse(today))/864e5):0;
+  $('summary').innerHTML=`${w.objects.length} published · dailies scheduled ${last&&last>=today?`through <b>${prettyDate(last)}</b> (${ahead} day${ahead===1?'':'s'} ahead)`:'<b>for no future days</b>'} · ${inbox.length} waiting for review`;
+  $('push').disabled=!pending.length;
+  $('push').textContent=pending.length?`Save to site (${pending.length})`:'Saved';
+  document.querySelector('[data-t="review"]').textContent=`Review (${inbox.length})`;
+  document.querySelector('[data-t="pub"]').textContent=`Published (${w.objects.length})`;
+  if(!$('pPub').hidden)renderPub();
+}
+function tab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  $('pReview').hidden=t!=='review';$('pAdd').hidden=t!=='add';$('pPub').hidden=t!=='pub';
+  if(t==='pub')renderPub();
+  if(t==='review'&&!cur)nextCandidate();
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>tab(b.dataset.go));
+
+/* ---------- adding candidates ---------- */
+function addToInbox(items){
+  const have=known(),inIds=new Set(inbox.map(x=>x.id));let n=0;
+  for(const it of items){if(have.has(it.id)||inIds.has(it.id))continue;inbox.push(it);inIds.add(it.id);n++}
+  saveInbox();refresh();return n;
+}
+$('addPaste').onclick=()=>{
+  const ids=[...new Set(($('paste').value.match(UUID)||[]).map(s=>s.toLowerCase()))];
+  if(!ids.length)return toast('No object links found in that text');
+  const n=addToInbox(ids.map(id=>({id,source:'link'})));
+  $('paste').value='';toast(n?`Added ${n} to review`:'Those are already published, skipped or waiting');
+  if(n&&!cur){tab('review')}
+};
+const clip=(s,n)=>{s=String(s||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();if(s.length<=n)return s;const cut=s.slice(0,n);const end=cut.lastIndexOf('. ');return (end>60?cut.slice(0,end+1):cut.replace(/\s+\S*$/,'')+'…')};
+function fromRecord(row){
+  const c=row.content||{},dnr=c.descriptiveNonRepeating||{},is=c.indexedStructured||{},ft=c.freetext||{};
+  const notes=ft.notes||[];
+  const note=notes.find(n=>/summary|description|brief/i.test(n.label||''))||notes[0];
+  const date=(is.date||[])[0]||((ft.date||[])[0]||{}).content||'';
+  return {title:row.title||(dnr.title||{}).content||'',hint:[dnr.data_source,date].filter(Boolean).join(' · '),fact:note?clip(note.content,260):''};
+}
+// Finds 3D packages in a catalog record, and whether each is marked CC0.
+function packages(row){
+  const media=(((row.content||{}).descriptiveNonRepeating||{}).online_media||{}).media||[];
+  const out=[];
+  for(const m of media){const s=JSON.stringify(m),mm=s.match(/3d_package:([0-9a-f-]{36})/i);if(mm)out.push({id:mm[1].toLowerCase(),cc0:/"access"\s*:\s*"CC0"/i.test(s)||/"usage"[^}]*CC0/i.test(s)})}
+  return out;
+}
+$('browse').onclick=async()=>{
+  if(!S.siKey){$('settings').hidden=false;return toast('Add the Smithsonian key in Settings first')}
+  const startAt=+(store.get('spincurate-offset')||0);
+  $('browse').disabled=true;$('browseOut').textContent='Searching the catalog…';
+  try{
+    const q='online_media_type:"3D Models"';
+    const r=await fetch(`https://api.si.edu/openaccess/api/v1.0/search?q=${encodeURIComponent(q)}&start=${startAt}&rows=40&api_key=${encodeURIComponent(S.siKey)}`);
+    if(!r.ok)throw new Error(r.status===403?'The Smithsonian key was rejected.':'Catalog error '+r.status);
+    const j=await r.json(),rows=(j.response||{}).rows||[],total=(j.response||{}).rowCount;
+    let found=0,cc0=0;const items=[];
+    for(const row of rows)for(const p of packages(row)){found++;if(p.cc0)cc0++;if(!$('onlyCc0').checked||p.cc0)items.push({id:p.id,source:'catalog',...fromRecord(row)})}
+    store.set('spincurate-offset',startAt+rows.length);
+    const n=addToInbox(items);
+    $('browseOut').textContent=`Checked records ${startAt+1}–${startAt+rows.length}${total?` of ${total}`:''}: ${found} 3D models, ${cc0} marked CC0, ${n} new added to review.`+(found&&!cc0&&$('onlyCc0').checked?' None were marked CC0 in this batch; untick the box to see them anyway, and check each one’s licence on its Smithsonian page.':'');
+  }catch(e){$('browseOut').textContent=e.message+' (If this keeps happening, use pasted links instead.)'}
+  $('browse').disabled=false;
+};
+// For a pasted link, try to fill in the museum details from the catalog too.
+async function lookup(id){
+  if(!S.siKey)return null;
+  try{
+    const r=await fetch(`https://api.si.edu/openaccess/api/v1.0/search?q=${encodeURIComponent('"'+id+'"')}&rows=5&api_key=${encodeURIComponent(S.siKey)}`);
+    const rows=((await r.json()).response||{}).rows||[];
+    const row=rows.find(x=>packages(x).some(p=>p.id===id));
+    return row?{...fromRecord(row),cc0:packages(row).find(p=>p.id===id).cc0}:null;
+  }catch(e){return null}
+}
+
+/* ---------- review ---------- */
+const viewer=new Viewer($('cv'));
+viewer.setDark(matchMedia('(prefers-color-scheme: dark)').matches);
+let cur=null,sel=0,editing=false;
+function fill(d){$('fName').value=d.name||'';$('fAlias').value=(d.aliases||[]).join('\n');$('fHint').value=d.hint||'';$('fFact').value=d.fact||'';$('fUse').value=d.use||'daily';$('fTest').value='';$('fTestOut').innerHTML='&nbsp;'}
+function readForm(){
+  return {id:cur.id,name:$('fName').value.trim(),aliases:$('fAlias').value.split('\n').map(s=>s.trim()).filter(Boolean),hint:$('fHint').value.trim(),fact:$('fFact').value.trim(),view:cur.view||{},use:$('fUse').value};
+}
+function nextCandidate(){
+  editing=false;
+  const have=known();
+  inbox=inbox.filter(x=>!have.has(x.id));saveInbox();
+  if(!inbox.length){cur=null;$('rev').hidden=true;$('empty').hidden=false;refresh();return}
+  openItem({...inbox[0],view:{}},false);
+}
+async function openItem(item,isEdit){
+  editing=isEdit;cur=item;sel=0;
+  $('empty').hidden=true;$('rev').hidden=false;
+  $('newActs').hidden=isEdit;$('editActs').hidden=!isEdit;
+  $('rTitle').textContent=item.name||item.title||'Loading…';
+  $('rSub').textContent=isEdit?(item.day?`Daily on ${prettyDate(item.day)}`:'Free play only'):`From ${item.source==='catalog'?'the catalog':'a pasted link'} · ${inbox.length} waiting`;
+  $('rLink').href='https://3d.si.edu/object/3d/'+item.id;
+  fill(isEdit?{...item,use:item.day?'daily':'free'}:{name:item.title||'',hint:item.hint,fact:item.fact,use:'daily'});
+  $('thumbs').innerHTML='';$('rStatus').hidden=false;$('rStatus').textContent='Loading from the Smithsonian…';
+  const my=item;
+  try{
+    const [doc,info]=await Promise.all([viewer.load(item.id,item.view),!isEdit&&!item.title?lookup(item.id):null]);
+    if(cur!==my||!doc)return;
+    const t=docTitle(doc);
+    if(!isEdit){
+      if(info){if(!$('fHint').value)$('fHint').value=info.hint;if(!$('fFact').value)$('fFact').value=info.fact;if(info.cc0===false)toast('The catalog doesn’t mark this one CC0. Check its licence before publishing.',5000)}
+      if(!$('fName').value)$('fName').value=(info&&info.title)||t;
+      $('rTitle').textContent=(info&&info.title)||item.title||t||'Untitled object';
+    }
+    $('rStatus').hidden=true;
+    viewer.onHi=()=>{if(cur===my)snapAll()};
+    snapAll();
+  }catch(e){
+    if(cur!==my)return;
+    $('rStatus').textContent='Couldn’t load this object. It may have no web model. Skip it or try later.';
+  }
+}
+function snapAll(){
+  const imgs=STAGES.map((_,i)=>viewer.snapshot(i));
+  $('thumbs').innerHTML=imgs.map((u,i)=>`<button class="thumb${i===sel?' on':''}" data-s="${i}"><img src="${u}" alt="View ${i+1}"><span>${STAGES[i]}</span></button>`).join('');
+  $('thumbs').querySelectorAll('.thumb').forEach(b=>b.onclick=()=>pick(+b.dataset.s));
+  viewer.setStage(sel,true);
+  tools();
+}
+function pick(i){sel=i;viewer.setStage(i,true);$('thumbs').querySelectorAll('.thumb').forEach((b,j)=>b.classList.toggle('on',j===i));tools()}
+function tools(){
+  $('angleTools').querySelectorAll('button').forEach(b=>b.disabled=sel>1);
+  $('angleLbl').textContent=sel>1?'Angles can be tweaked on views 1 and 2':`View ${sel+1}:`;
+}
+$('angleTools').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  if(!cur||sel>1)return;
+  const v=cur.view=cur.view||{},d=viewer.stageDef(sel),yk='y'+sel,ek='e'+sel,a=b.dataset.a;
+  if(a==='reset'){delete v[yk];delete v[ek]}
+  else if(a==='yaw-')v[yk]=((d.yaw-15)%360+360)%360;
+  else if(a==='yaw+')v[yk]=(d.yaw+15)%360;
+  else if(a==='elev+')v[ek]=Math.min(85,d.elev+10);
+  else if(a==='elev-')v[ek]=Math.max(-85,d.elev-10);
+  viewer.setView(v);snapAll();
+});
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{
+  if(!cur)return;
+  const v=cur.view=cur.view||{},f=b.dataset.f;
+  if(f==='r')delete v.fix;
+  else{const fix=v.fix?[...v.fix]:[0,0,0];fix[+f]=(fix[+f]+90)%360;v.fix=fix}
+  viewer.setView(v);snapAll();
+});
+$('fTest').oninput=()=>{
+  const g=$('fTest').value;if(!g.trim()){$('fTestOut').innerHTML='&nbsp;';return}
+  const f=readForm(),m=match(g,[f.name,...f.aliases]);
+  $('fTestOut').innerHTML=m?`<span class="ok">Accepted</span> (counts as “${esc(m)}”)`:'<span class="no">Not accepted</span>. Add it to "Also accept" if it should be.';
+};
+function validate(f){if(!f.name){toast('Give it a name first');$('fName').focus();return false}return true}
+$('aPub').onclick=()=>{
+  const f=readForm();if(!validate(f))return;
+  pending.push({op:'publish',obj:f});inbox=inbox.filter(x=>x.id!==f.id);saveInbox();savePending();
+  toast(pending.length>=10?`Published. ${pending.length} changes waiting: tap "Save to site" soon.`:'Published (not saved to the site yet)');
+  nextCandidate();
+};
+$('aSkip').onclick=()=>{pending.push({op:'skip',id:cur.id});inbox=inbox.filter(x=>x.id!==cur.id);saveInbox();savePending();nextCandidate()};
+$('aLater').onclick=()=>{const i=inbox.findIndex(x=>x.id===cur.id);if(i>=0)inbox.push(inbox.splice(i,1)[0]);saveInbox();nextCandidate()};
+$('aSave').onclick=()=>{const f=readForm();if(!validate(f))return;pending.push({op:'update',obj:f});savePending();toast('Changes saved (not on the site yet)');tab('pub')};
+$('aRemove').onclick=()=>{
+  if(cur.day===today&&!confirm('This is today’s daily. Removing it changes today’s puzzle for anyone who hasn’t played yet. Remove anyway?'))return;
+  pending.push({op:'remove',id:cur.id});savePending();toast('Removed (not saved to the site yet)');tab('pub');
+};
+$('aCancel').onclick=()=>tab('pub');
+
+/* ---------- published list ---------- */
+function renderPub(){
+  const w=working(),ids=new Set(pending.flatMap(p=>p.obj?[p.obj.id]:[p.id]));
+  const list=[...w.objects].sort((a,b)=>(a.day||'9999')<(b.day||'9999')?-1:(a.day||'9999')>(b.day||'9999')?1:0);
+  $('pubList').innerHTML=list.length?list.map(o=>`<button class="item" data-id="${o.id}"><span><b>${esc(o.name)}</b><br><small>${o.day?(o.day===today?'Today’s daily':(o.day<today?'Was the daily ':'Daily ')+prettyDate(o.day)):'Free play only'} · ${(o.aliases||[]).length} alternative name${(o.aliases||[]).length===1?'':'s'}${ids.has(o.id)?' · <i>not saved yet</i>':''}</small></span><span class="badge${o.day?'':' free'}">${o.day?(o.day<today?'Past':o.day===today?'Today':'Queued'):'Free'}</span></button>`).join(''):'<p class="muted">Nothing published yet.</p>';
+  $('pubList').querySelectorAll('.item').forEach(b=>b.onclick=()=>{
+    const o=working().objects.find(x=>x.id===b.dataset.id);
+    tab('review');openItem(JSON.parse(JSON.stringify({...o,view:o.view||{}})),true);
+  });
+}
+
+/* ---------- start ---------- */
+(async()=>{
+  try{remote=await ghGet()}catch(e){$('summary').textContent=e.message+(S.token?'':' Add a GitHub token in Settings.');if(!S.token)$('settings').hidden=false}
+  refresh();nextCandidate();
+})();
+</script>
+</body>
+</html>

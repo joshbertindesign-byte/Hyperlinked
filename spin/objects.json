@@ -1,0 +1,133 @@
+{
+ "version": 1,
+ "objects": [
+  {
+   "id": "341c96cd-f967-4540-8ed1-d3fc56d31f12",
+   "name": "Woolly mammoth skeleton",
+   "aliases": [
+    "Woolly mammoth",
+    "Mammoth",
+    "Mammoth skeleton"
+   ],
+   "hint": "Natural History Museum · Ice Age",
+   "fact": "Woolly mammoths roamed the cold steppes of the last Ice Age. A small population survived on Wrangel Island until about 4,000 years ago.",
+   "day": "2026-11-23",
+   "view": {}
+  },
+  {
+   "id": "d8c62e5e-4ebc-11ea-b77f-2e728ce88125",
+   "name": "1903 Wright Flyer",
+   "aliases": [
+    "Wright Flyer",
+    "Wright brothers plane",
+    "Wright brothers airplane",
+    "Kitty Hawk Flyer",
+    "Wright plane"
+   ],
+   "hint": "Air and Space Museum · 1903",
+   "fact": "The first powered, controlled airplane. Its first flight at Kitty Hawk on December 17, 1903 lasted 12 seconds.",
+   "day": "2026-11-24",
+   "view": {}
+  },
+  {
+   "id": "6c69a6bb-55e6-4356-8725-120ff7f8d652",
+   "name": "Bell X-1 \"Glamorous Glennis\"",
+   "aliases": [
+    "Bell X-1",
+    "X-1",
+    "Glamorous Glennis"
+   ],
+   "hint": "Air and Space Museum · 1946",
+   "fact": "On October 14, 1947, Chuck Yeager flew it faster than the speed of sound, the first airplane ever to do so.",
+   "day": "2026-11-25",
+   "view": {}
+  },
+  {
+   "id": "d8c636ce-4ebc-11ea-b77f-2e728ce88125",
+   "name": "Space Shuttle Discovery",
+   "aliases": [
+    "Space Shuttle",
+    "Discovery",
+    "Shuttle",
+    "Shuttle orbiter"
+   ],
+   "hint": "Air and Space Museum · flew 1984–2011",
+   "fact": "Discovery flew more missions than any other shuttle, including the 1990 launch of the Hubble Space Telescope.",
+   "day": "2026-11-26",
+   "view": {}
+  },
+  {
+   "id": "d8c6457e-4ebc-11ea-b77f-2e728ce88125",
+   "name": "Apollo 11 Command Module \"Columbia\"",
+   "aliases": [
+    "Apollo 11",
+    "Command module",
+    "Apollo command module",
+    "Columbia",
+    "Apollo capsule"
+   ],
+   "hint": "Air and Space Museum · 1969",
+   "fact": "Columbia carried Neil Armstrong, Buzz Aldrin and Michael Collins to the Moon and back. It was the only part of the spacecraft to return to Earth.",
+   "day": "2026-11-27",
+   "view": {}
+  },
+  {
+   "id": "e7514eea-3f12-490d-a2d0-999f2a1a70f7",
+   "name": "Apollo 11 crew hatch",
+   "aliases": [
+    "Apollo hatch",
+    "Apollo 11 hatch",
+    "Hatch",
+    "Spacecraft hatch",
+    "Capsule hatch"
+   ],
+   "hint": "Air and Space Museum · 1969",
+   "fact": "The main hatch on Columbia. This \"unified hatch\" was redesigned after the 1967 Apollo 1 fire so crews could get out quickly.",
+   "day": "2026-11-28",
+   "view": {}
+  },
+  {
+   "id": "ed99f44d-3c60-4111-b666-e2908e1b64ef",
+   "name": "Morse-Vail telegraph key",
+   "aliases": [
+    "Telegraph key",
+    "Telegraph",
+    "Morse key",
+    "Morse code key"
+   ],
+   "hint": "American History Museum · 1844",
+   "fact": "Made by Alfred Vail and believed to be from the first Baltimore–Washington telegraph line, demonstrated in 1844.",
+   "day": "2026-11-29",
+   "view": {}
+  },
+  {
+   "id": "c7c58ff8-fd1f-4cf6-9813-6bca3cd0b8b3",
+   "name": "Charlie Parker’s alto saxophone",
+   "aliases": [
+    "Saxophone",
+    "Sax",
+    "Alto saxophone",
+    "Alto sax",
+    "Charlie Parker sax"
+   ],
+   "hint": "African American History and Culture Museum · c. 1947",
+   "fact": "Charlie \"Bird\" Parker’s sax, with a sterling silver bell engraved with his name, made around 1947.",
+   "day": "2026-11-30",
+   "view": {}
+  },
+  {
+   "id": "d8c623be-4ebc-11ea-b77f-2e728ce88125",
+   "name": "Triceratops skeleton (\"Hatcher\")",
+   "aliases": [
+    "Triceratops",
+    "Triceratops skeleton",
+    "Hatcher"
+   ],
+   "hint": "Natural History Museum · found 1890",
+   "fact": "Hatcher was the first Triceratops ever put on display, and the first whole dinosaur skeleton the Smithsonian scanned in 3D.",
+   "day": "2026-12-01",
+   "view": {}
+  }
+ ],
+ "skipped": []
+}
