@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hyperlinked</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: playful but calm, like reading an encyclopedia with a friend
+   IDEA: a Wikipedia article page — blue links, hairline rules, serif titles
+   PICTURE: the current article as a "page" card; the trail of hops as a chain
+   COLOUR and TYPE: page white/grey, link blue, wiki green for right, red-link red for wrong; Crimson Pro titles + system sans
+   LAYOUT: one column, article card, 2x2 options, reveal, trail */
+:root{color-scheme:light dark;
+  --bg:light-dark(#f6f6f6,#101418);--card:light-dark(#fff,#1a1f26);--ink:light-dark(#202122,#e8eaed);
+  --mute:light-dark(#54595d,#a2a9b1);--rule:light-dark(#c8ccd1,#3a414a);--link:light-dark(#3366cc,#88a3e8);
+  --good:light-dark(#14866d,#3ec49d);--bad:light-dark(#d73333,#ff7a7a);--hi:light-dark(#fef6e7,#3b3220);
+  --soft:light-dark(#eaf3ff,#1f2a3d)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip}
+.wrap{max-width:780px;margin:0 auto;padding:clamp(16px,4vw,40px) max(4vw,14px) 48px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:20px}
+h1{font:600 clamp(32px,6vw,44px)/1.05 "Crimson Pro",Georgia,serif;margin:0}
+.tag{color:var(--mute);font-size:14px;margin:4px 0 0}
+.score{display:flex;gap:18px;text-align:right}
+.score b{display:block;font:600 30px/1 "Crimson Pro",Georgia,serif}
+.score span{font-size:13px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:clamp(16px,3vw,28px)}
+.art{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
+.art img{width:clamp(84px,18vw,150px);aspect-ratio:1;object-fit:cover;border-radius:4px;border:1px solid var(--rule);background:var(--bg)}
+.label{font-size:13px;color:var(--mute);margin:0 0 2px}
+h2{font:600 clamp(28px,5vw,40px)/1.08 "Crimson Pro",Georgia,serif;margin:0 0 6px;text-wrap:balance;border-bottom:1px solid var(--rule);padding-bottom:8px}
+h3{font:600 24px/1.15 "Crimson Pro",Georgia,serif;margin:0 0 6px}
+.desc{color:var(--mute);margin:0;font-style:italic}
+.q{margin:22px 0 12px;font-weight:600}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;min-height:64px;padding:12px 14px;font:inherit;color:var(--link);background:var(--card);border:1px solid var(--rule);border-radius:6px;cursor:pointer;transition:background .15s,border-color .15s}
+.opt:hover:not(:disabled){background:var(--soft);border-color:var(--link)}
+.opt:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+.opt .k{flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--rule);color:var(--mute);font-size:13px;display:grid;place-items:center;margin-top:1px}
+.opt .t{font-size:17px;font-weight:500;line-height:1.3}
+.opt small{display:block;color:var(--mute);font-size:13px;margin-top:3px;font-weight:400}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card));color:var(--ink)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card));color:var(--ink)}
+.opt.dim{opacity:.55}
+.reveal{margin-top:18px;border-top:1px solid var(--rule);padding-top:16px}
+.verdict{font:600 24px/1.2 "Crimson Pro",Georgia,serif;margin:0 0 8px}
+.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
+blockquote{margin:0 0 14px;padding:10px 14px;border-left:3px solid var(--rule);background:var(--bg);border-radius:0 4px 4px 0}
+blockquote small{display:block;color:var(--mute);font-size:13px;margin-bottom:4px}
+mark{background:var(--hi);color:var(--link);padding:0 2px;border-radius:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{min-height:44px;padding:0 18px;font:600 15px/1 inherit;font-family:inherit;border-radius:6px;border:1px solid var(--link);background:var(--link);color:#fff;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--link)}
+a{color:var(--link)}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mode{border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.mode p{margin:0;color:var(--mute);font-size:15px}
+.mode .btn{align-self:flex-start;margin-top:auto}
+.marks{font-size:22px;letter-spacing:2px;line-height:1.3;word-break:break-all}
+pre.share{margin:0 0 10px;padding:10px 12px;background:var(--bg);border:1px solid var(--rule);border-radius:4px;font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.trail{margin-top:22px}
+.chain{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:14px}
+.chain a{text-decoration:none;padding:3px 8px;border:1px solid var(--rule);border-radius:999px;background:var(--card)}
+.chain a:hover{border-color:var(--link)}
+.chain i{color:var(--mute);font-style:normal}
+.note{color:var(--mute);font-size:14px;margin:10px 0 0}
+.start{margin-top:28px;border-top:1px solid var(--rule);padding-top:16px}
+.start form{display:flex;gap:10px;flex-wrap:wrap}
+.start input[type=text]{flex:1 1 220px;min-height:44px;padding:0 12px;font:16px inherit;font-family:inherit;border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink)}
+.hint{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--mute);margin-top:12px;cursor:pointer}
+.hint input{width:18px;height:18px}
+.loading{display:flex;gap:12px;align-items:center;color:var(--mute);min-height:160px;justify-content:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--link);animation:hop .9s ease-in-out infinite}
+@keyframes hop{50%{transform:translateY(-10px);opacity:.5}}
+@media(prefers-reduced-motion:reduce){.dot{animation:none}.opt{transition:none}}
+@media(max-width:520px){.opts,.modes{grid-template-columns:minmax(0,1fr)}.art{grid-template-columns:minmax(0,1fr)}.art img{order:-1;width:100%;aspect-ratio:16/9}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Hyperlinked</h1><p class="tag" id="modeTag">Which of these does the article actually link to? One miss ends the run.</p></div>
+    <div class="score"><div><b id="streak">0</b><span>streak</span></div><div><b id="best">0</b><span>best</span></div></div>
+  </header>
+  <main id="stage" class="card"><div class="loading"><div class="dot"></div>Loading…</div></main>
+  <section class="trail" id="trailBox" hidden><p class="label">Your path so far</p><div class="chain" id="chain"></div></section>
+  <section class="start">
+    <form id="startForm"><input type="text" id="startInput" placeholder="Free play from any article, e.g. Honey bee" aria-label="Starting article"><button class="btn" type="submit">Start here</button><button class="btn ghost" type="button" id="randBtn">Random start</button><button class="btn ghost" type="button" id="homeBtn">Home</button></form>
+    <label class="hint"><input type="checkbox" id="hintBox"> Show short descriptions before I answer (easier)</label>
+  </section>
+</div>
+<script>
+{
+/* ================= Settings you can edit ================= */
+// Any article whose title, short description or category matches this is skipped.
+const BLOCK=/\b(wars?|warfare|warlords?|battles?|sieges?|invasions?|military|armed forces|genocides?|massacres?|holocaust|nazis?|nazism|deaths?|dead|dying|died|killings?|killed|killers?|murders?|murderers?|homicides?|assassinat\w*|executions?|executed|suicides?|sex|sexes|sexual\w*|porn\w*|prostitut\w*|rape|raped|erotic\w*|nude|nudity|naked|terroris\w*|bombs?|bombings?|bombers?|weapons?|firearms?|guns?|shootings?|tortur\w*|slavery|slaves?|crimes?|criminals?|abuse|drugs?|cocaine|heroin|overdose|violence|violent|burials?|cemeter\w*|funerals?|corpses?)\b/i;
+// Birth/death-year categories are on nearly every biography, so they don't count.
+const SAFE_CAT=/^(\d+(st|nd|rd|th)?(-century)?s?( BC| BCE)? (births|deaths)|Living people|Possibly living people|Year of (birth|death) .*)$/i;
+// Categories that are bookkeeping or too vague to give good "same kind of thing" decoys.
+const CAT_SKIP=/\b(articles?|pages?|wikipedia|stubs?|cs1|webarchive|wikidata|commons|use (dmy|mdy)|short description|redirects?|disambiguation|good|featured|templates?|lists?|introductions|establishments|disestablishments|people from|alumni|births|deaths)\b|\b\d{3,4}s?\b/i;
+// Links that are almost always right. They're used as the answer only as a last resort, and never as decoys.
+const GIVEAWAYS=["United States","United Kingdom","England","Scotland","Wales","Ireland","France","Germany","Italy","Spain","Portugal","Netherlands","Russia","China","Japan","India","Canada","Australia","New Zealand","Mexico","Brazil","Egypt","Greece","Europe","Asia","Africa","North America","South America","Antarctica","Oceania","Earth","World","Human","Humans","Animal","Plant","Species","Genus","Family (biology)","Order (biology)","Taxonomy (biology)","English language","French language","German language","Spanish language","Latin","Ancient Greek","Greek language","London","Paris","New York City","California","Texas","Science","Mathematics","Physics","Chemistry","Biology","History","Music","Art","Film","Television","Book","Novel","Album","Record label","Single (music)","Water","Sun","Country","City","Capital city","Language","Culture","Religion","Christianity","Catholic Church","Islam","Roman Empire","Ancient Rome","Ancient Greece","Middle Ages","Northern Hemisphere","Southern Hemisphere","Wikipedia"];
+// Friendly, well-known starting points (also the daily challenge pool).
+const SEEDS=["Honey bee","Volcano","Jazz","Tomato","Moon","Chess","Lego","Origami","Octopus","Coffee","Pizza","Rainbow","Saturn","Photosynthesis","Bicycle","Piano","Penguin","Chocolate","Tea","Cheese","Bread","Banana","Maple syrup","Ice hockey","Basketball","Mount Everest","Amazon River","Sahara","Great Barrier Reef","Leonardo da Vinci","Isaac Newton","Marie Curie","The Beatles","Wolfgang Amadeus Mozart","Vincent van Gogh","Eiffel Tower","Great Wall of China","Rubik's Cube","Kite","Hot air balloon","Lighthouse","Telescope","Printing press","Magnet","Rainforest","Dinosaur","Butterfly","Honey","Dolphin","Giraffe","Elephant","Sunflower","Bonsai","Greenhouse","Cactus","Tulip","Oak","Mushroom","Snowflake","Aurora","Comet","Mars","Jupiter","International Space Station","Apollo 11","Wright brothers","Steam engine","Jigsaw puzzle","Sudoku","Crossword","Ballet","Opera","Guitar","Violin","William Shakespeare","Library","Glass","Silk","Paper","Pencil","Compass","Sourdough","Pasta","Sushi","Ice cream","Popcorn","Polar bear","Beaver","Canoe","Lake Superior","Niagara Falls","Glacier","Tide","Coral reef","Hummingbird","Owl","Bamboo","Potato","Corn","Strawberry","Lemon"];
+// How many decoys are "same kind of thing" as the answer, by current streak.
+const tier=s=>s<3?0:s<7?1:s<12?2:3;
+const TIER_LABEL=['Decoys: from far-off articles','Decoys: one is the same kind of thing as the answer','Decoys: two are the same kind of thing as the answer','Decoys: all the same kind of thing as the answer'];
+
+/* ================= Helpers ================= */
+const API='https://en.wikipedia.org/w/api.php';
+const low=s=>s.replace(/_/g,' ').toLowerCase();
+const GIVE=new Set(GIVEAWAYS.map(low));
+const hashStr=s=>{let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+const seeded=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const shuffle=(a,r=Math.random)=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=r()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=(a,r=Math.random)=>a[r()*a.length|0];
+const uniq=a=>{const s=new Set();return a.filter(x=>!s.has(low(x))&&s.add(low(x)))};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const wiki=t=>'https://en.wikipedia.org/wiki/'+encodeURIComponent(t.replace(/ /g,'_'));
+const fail=code=>Object.assign(new Error(code),{code});
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const today=new Date().toLocaleDateString('en-CA');
+const prettyDay=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+
+/* ================= Wikipedia API ================= */
+async function api(params){
+  const u=new URL(API);
+  const p={format:'json',formatversion:'2',origin:'*',...params};
+  for(const k in p)u.searchParams.set(k,p[k]);
+  let r;
+  try{r=await fetch(u)}catch(e){throw fail('network')}
+  if(!r.ok)throw fail('network');
+  const j=await r.json();
+  if(j.error)throw fail(j.error.code);
+  return j;
+}
+// action=query that follows "continue" and merges per-page lists.
+// genKey: stop once only the generator itself wants to continue (current batch is complete).
+async function queryAll(params,genKey){
+  let cont={},normalized=[],redirects=[];const pages=new Map();
+  for(let i=0;i<8;i++){
+    const j=await api({action:'query',...params,...cont});
+    const q=j.query||{};
+    if(i===0){normalized=q.normalized||[];redirects=q.redirects||[]}
+    for(const pg of q.pages||[]){
+      const cur=pages.get(pg.title);
+      if(!cur){pages.set(pg.title,{...pg});continue}
+      for(const k of ['categories','redirects'])if(pg[k])cur[k]=(cur[k]||[]).concat(pg[k]);
+      if(pg.pageprops)cur.pageprops={...cur.pageprops,...pg.pageprops};
+      if(pg.thumbnail)cur.thumbnail=pg.thumbnail;
+    }
+    if(!j.continue)break;
+    if(genKey&&Object.keys(j.continue).every(k=>k==='continue'||k===genKey))break;
+    cont=j.continue;
+  }
+  return {pages,normalized,redirects};
+}
+const INFO={prop:'pageprops|categories|redirects',ppprop:'disambiguation|wikibase-shortdesc',clshow:'!hidden',cllimit:'max',rdlimit:'max',rdprop:'title',rdnamespace:'0'};
+function resolve(t,q){
+  const n=q.normalized.find(x=>x.from===t);if(n)t=n.to;
+  const r=q.redirects.find(x=>x.from===t);if(r)t=r.to;
+  return t;
+}
+
+/* ================= Filters ================= */
+const NS=/^(File|Image|Help|Wikipedia|WP|Template|Category|Portal|Special|Talk|User|Module|Draft|MOS|Wiktionary|wikt|H):/i;
+const JUNK=[/^\d{1,4}s?( (BC|BCE|AD|CE))?$/i,/^(AD|BC) \d+$/,/\b(century|millennium)\b/i,/^(January|February|March|April|May|June|July|August|September|October|November|December)( \d{1,2})?$/,/^(List|Lists|Outline|Index|Glossary|Timeline) of /i,/\(disambiguation\)/i,/^\d{4} in /];
+const usable=t=>t.length<70&&!NS.test(t)&&!JUNK.some(r=>r.test(t))&&!BLOCK.test(t);
+const isBlocked=(title,desc,cats)=>BLOCK.test(title)||BLOCK.test(desc||'')||cats.some(c=>!SAFE_CAT.test(c)&&BLOCK.test(c));
+const catsOf=pg=>(pg.categories||[]).map(c=>c.title.replace(/^Category:/,''));
+const descOf=pg=>(pg.pageprops||{})['wikibase-shortdesc']||'';
+const cleanPage=(title,pg)=>pg&&!pg.missing&&!pg.invalid&&!('disambiguation' in (pg.pageprops||{}))&&!isBlocked(title,descOf(pg),catsOf(pg));
+
+/* ================= Article loading ================= */
+function sentenceAround(text,s,len){
+  let a=0,b=text.length;
+  for(let i=s-1;i>0;i--){if('.!?'.includes(text[i-1])&&/\s/.test(text[i])){a=i;break}}
+  for(let i=s+len;i<text.length;i++){if('.!?'.includes(text[i])&&(i+1>=text.length||/\s/.test(text[i+1]))){b=i+1;break}}
+  let pre='',post='';
+  if(s-a>160){a=s-150;pre='…'}
+  if(b-(s+len)>180){b=s+len+170;post='…'}
+  return {before:pre+text.slice(a,s).replace(/^\s+/,''),mid:text.slice(s,s+len),after:text.slice(s+len,b).replace(/\s+$/,'')+post};
+}
+function extractLead(html,linkSet){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  doc.querySelectorAll('sup,.reference,.mw-ref,style,.IPA,.noprint,.error,.mw-empty-elt').forEach(n=>n.remove());
+  let ps=doc.querySelectorAll('.mw-parser-output > p');
+  if(!ps.length)ps=doc.querySelectorAll('p');
+  const out=new Map();
+  for(const p of ps){
+    const text=p.textContent;
+    for(const a of p.querySelectorAll('a[href^="/wiki/"]')){
+      if(a.classList.contains('new')||a.classList.contains('extiw'))continue;
+      let t=a.getAttribute('title');if(!t)continue;
+      t=t.split('#')[0];
+      if(out.has(low(t))||!linkSet.has(low(t))||!usable(t))continue;
+      const r=doc.createRange();r.setStart(p,0);r.setEndBefore(a);
+      out.set(low(t),{title:t,sentence:sentenceAround(text,r.toString().length,a.textContent.length)});
+    }
+  }
+  return [...out.values()];
+}
+async function loadArticle(title){
+  const [full,lead,meta,canonLinks,plain]=await Promise.all([
+    api({action:'parse',page:title,prop:'links|categories',redirects:'1'}),
+    api({action:'parse',page:title,prop:'text',section:'0',redirects:'1',disableeditsection:'1',disablelimitreport:'1'}),
+    queryAll({titles:title,redirects:'1',prop:'pageimages|pageprops',piprop:'thumbnail',pithumbsize:'480',ppprop:'disambiguation|wikibase-shortdesc'}),
+    // Every link target with redirects followed, so "Honeybee" and "Honey bee" count as the same link.
+    queryAll({generator:'links',titles:title,redirects:'1',gplnamespace:'0',gpllimit:'max'}).catch(()=>null),
+    // The article's full plain text, so decoys that are mentioned (even unlinked) can be thrown out.
+    api({action:'query',titles:title,redirects:'1',prop:'extracts',explaintext:'1',exsectionformat:'plain'}).catch(()=>null)
+  ]);
+  const canon=full.parse.title;
+  const linkSet=new Set((full.parse.links||[]).filter(l=>l.ns===0).map(l=>low(l.title)));
+  if(canonLinks){for(const t of canonLinks.pages.keys())linkSet.add(low(t));for(const r of canonLinks.redirects)linkSet.add(low(r.to))}
+  const text=(plain?.query?.pages?.[0]?.extract||'').toLowerCase();
+  const cats=(full.parse.categories||[]).filter(c=>!c.hidden).map(c=>c.category.replace(/_/g,' '));
+  const pg=[...meta.pages.values()][0]||{};
+  if('disambiguation' in (pg.pageprops||{}))throw fail('disambig');
+  const desc=descOf(pg);
+  if(isBlocked(canon,desc,cats))throw fail('blocked');
+  return {title:canon,desc,thumb:pg.thumbnail?.source||'',linkSet,text,lead:extractLead(lead.parse.text,linkSet)};
+}
+const poolCache=new Map();
+function leadLinks(title){
+  if(!poolCache.has(title)){
+    poolCache.set(title,api({action:'parse',page:title,prop:'links',section:'0',redirects:'1'})
+      .then(j=>(j.parse.links||[]).filter(l=>l.ns===0&&l.exists!==false).map(l=>l.title))
+      .catch(()=>[]));
+  }
+  return poolCache.get(title);
+}
+// Other members of the answer's own categories: "the same kind of thing" decoys.
+async function siblings(cats,rng){
+  const good=shuffle(cats.filter(c=>!CAT_SKIP.test(c)&&!SAFE_CAT.test(c)&&!BLOCK.test(c)),rng).slice(0,2);
+  const res=await Promise.all(good.map(c=>queryAll({generator:'categorymembers',gcmtitle:'Category:'+c,gcmnamespace:'0',gcmtype:'page',gcmlimit:'40',...INFO},'gcmcontinue').catch(()=>null)));
+  const out=[];
+  for(const q of res){if(!q)continue;for(const pg of q.pages.values())if(pg.ns===0&&!pg.missing)out.push({canon:pg.title,pg})}
+  return shuffle(out,rng);
+}
+
+/* ================= Fairness helpers ================= */
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+// Is this title (minus any "(qualifier)") written anywhere in the article, linked or not?
+function mentioned(title,text){
+  const base=title.replace(/\s*\([^)]*\)\s*$/,'').trim();
+  if(base.length<3||!text)return false;
+  return new RegExp('(^|[^a-z0-9])'+reEsc(base.toLowerCase())+'($|[^a-z0-9])').test(text);
+}
+// "Echo" words: words from the article's title that, if they appear in an option, give it away
+// (Chess → "Chess opening", "Castling (chess)", "Magnus Carlsen (chess player)" would all echo "chess").
+const STOP=new Set(['the','and','for','with','from','into','von','van','der','des','les','los','las','del','its']);
+const echoTokens=title=>uniq(low(title).replace(/[()]/g,' ').split(/[^a-z0-9'’]+/).filter(w=>w.length>=3&&!STOP.has(w)));
+const echoOf=(t,tokens)=>tokens.find(tok=>new RegExp('(^|[^a-z0-9])'+reEsc(tok)).test(low(t)))||null;
+// Pages whose titles contain the same echo word, e.g. other "…chess…" articles.
+async function echoPool(tok,rng){
+  const q=await queryAll({generator:'search',gsrsearch:'intitle:'+tok,gsrnamespace:'0',gsrlimit:'50',...INFO},'gsroffset').catch(()=>null);
+  if(!q)return [];
+  return shuffle([...q.pages.values()].filter(pg=>pg.ns===0&&!pg.missing).map(pg=>({canon:pg.title,pg})),rng);
+}
+
+/* ================= Building a round ================= */
+async function buildRound(art,s,rng){
+  const tokens=echoTokens(art.title);
+  const avail=shuffle(art.lead.filter(l=>!visited.has(low(l.title))&&low(l.title)!==low(art.title)),rng);
+  // Prefer answers that don't echo the title and aren't giveaways; use those only when nothing else is left.
+  const rank=l=>GIVE.has(low(l.title))?2:echoOf(l.title,tokens)?1:0;
+  const cands=[0,1,2].flatMap(k=>avail.filter(l=>rank(l)===k));
+  if(!cands.length)throw fail('deadend');
+  const sibN=tier(s);
+  const neighbours=shuffle(art.lead.map(l=>l.title),rng);
+  for(let attempt=0;attempt<4&&cands.length;attempt++){
+    const farSrc=pick(SEEDS.filter(x=>low(x)!==low(art.title)),rng);
+    const nbSrc=neighbours[attempt%neighbours.length];
+    const [farPool,nbPool]=await Promise.all([leadLinks(farSrc),sibN?leadLinks(nbSrc):[]]);
+    const ok=t=>usable(t)&&!GIVE.has(low(t))&&!art.linkSet.has(low(t))&&low(t)!==low(art.title);
+    const farC=shuffle(uniq(farPool.filter(ok)),rng).slice(0,10);
+    const nbC=sibN?shuffle(uniq(nbPool.filter(ok)),rng).slice(0,8):[];
+    const corrC=cands.splice(0,4);
+    const q=await queryAll({titles:uniq([...corrC.map(c=>c.title),...nbC,...farC]).slice(0,50).join('|'),redirects:'1',...INFO});
+    const info=t=>{const c=resolve(t,q);const pg=q.pages.get(c);return pg?{canon:c,pg}:null};
+    let correct=null;
+    for(const c of corrC){
+      const x=info(c.title);
+      if(x&&cleanPage(x.canon,x.pg)&&!visited.has(low(x.canon))&&low(x.canon)!==low(art.title)){
+        correct={title:x.canon,desc:descOf(x.pg),sentence:c.sentence,cats:catsOf(x.pg),ok:true};break;
+      }
+    }
+    if(!correct)continue;
+    const used=new Set([low(correct.title),low(art.title)]);
+    const decoyOk=x=>x&&cleanPage(x.canon,x.pg)&&usable(x.canon)&&!GIVE.has(low(x.canon))&&!used.has(low(x.canon))
+      &&!art.linkSet.has(low(x.canon))&&!(x.pg.redirects||[]).some(r=>art.linkSet.has(low(r.title)))
+      &&!mentioned(x.canon,art.text);
+    const take=(xs,n,mustEcho)=>{const out=[];for(const x of xs){if(out.length>=n)break;if(!decoyOk(x))continue;if(mustEcho&&!echoOf(x.canon,[mustEcho]))continue;used.add(low(x.canon));out.push({title:x.canon,desc:descOf(x.pg),ok:false})}return out};
+    // If the answer echoes the title ("Chess opening" on Chess), the decoys must echo it too.
+    const echo=echoOf(correct.title,tokens);
+    const want=echo?3:sibN;
+    let decoys=[];
+    if(echo)decoys=take(await echoPool(echo,rng),3,echo);
+    if(decoys.length<want){
+      const sibs=await siblings(correct.cats,rng);
+      if(echo)decoys=decoys.concat(take(sibs,want-decoys.length,echo));
+      decoys=decoys.concat(take(sibs,want-decoys.length));
+    }
+    if(decoys.length<want)decoys=decoys.concat(take(nbC.map(info),want-decoys.length));
+    decoys=decoys.concat(take(farC.map(info),3-decoys.length));
+    if(decoys.length<3)decoys=decoys.concat(take(nbC.map(info),3-decoys.length));
+    if(decoys.length===3)return {correct,options:shuffle([correct,...decoys],rng),label:echo?`Decoys: matched to the answer's wording ("${echo}")`:TIER_LABEL[sibN]};
+    cands.unshift(...corrC.filter(c=>low(c.title)!==low(correct.title)));
+  }
+  throw fail('deadend');
+}
+
+/* ================= Game state ================= */
+const $=id=>document.getElementById(id);
+const stage=$('stage');
+let mode='free',art=null,round=null,streak=0,trail=[],visited=new Set(),nextP=null,answered=false,gen=0,marks='';
+let best=+(store.get('hyperlinked-best')||0);
+let hints=store.get('hyperlinked-hints')===true;
+$('hintBox').checked=hints;
+// In daily mode every random choice is seeded by date + round + article, so everyone gets the same game.
+const rngFor=(i,title)=>mode==='daily'?seeded(hashStr(today+'|'+i+'|'+title)):Math.random;
+const daily=()=>{const d=store.get('hyperlinked-daily');return d&&d.date===today?d:null};
+const shareText=d=>`Hyperlinked Daily · ${prettyDay}\nStarted at ${d.start}\n${d.marks||'🟥'} ${d.streak}`;
+
+/* ================= UI ================= */
+const loading=msg=>{stage.innerHTML=`<div class="loading"><div class="dot"></div>${esc(msg)}</div>`};
+const NET="Couldn't reach Wikipedia. Check your connection and try again.";
+const errorView=msg=>{stage.innerHTML=`<p class="verdict no">Hmm.</p><p>${esc(msg)}</p><div class="row"><button class="btn" id="retry">Back to start</button></div>`;$('retry').onclick=home};
+function score(){$('streak').textContent=streak;$('best').textContent=best}
+function setTag(){
+  $('modeTag').textContent=mode==='daily'?`Daily challenge · ${prettyDay} · one try`:'Free play · Which of these does the article actually link to? One miss ends the run.';
+}
+function renderTrail(){
+  $('trailBox').hidden=!trail.length;
+  $('chain').innerHTML=trail.map((t,i)=>(i?'<i>→</i>':'')+`<a href="${wiki(t)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('');
+}
+function shareBlock(d){
+  return `<pre class="share" id="shareTxt">${esc(shareText(d))}</pre><button class="btn" id="copyBtn">Copy result</button>`;
+}
+function wireCopy(d){
+  const b=$('copyBtn');if(!b)return;
+  b.onclick=async()=>{
+    try{await navigator.clipboard.writeText(shareText(d));b.textContent='Copied!'}
+    catch(e){const r=document.createRange();r.selectNodeContents($('shareTxt'));const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected, press Ctrl+C'}
+  };
+}
+function home(){
+  gen++;mode='free';round=null;streak=0;trail=[];renderTrail();score();
+  $('modeTag').textContent='Which of these does the article actually link to? One miss ends the run.';
+  const d=daily();
+  const dailyCard=d
+    ?`<div class="mode"><h3>Today's daily</h3><p>You've played today. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div><p>Streak ${d.streak}, started at ${esc(d.start)}</p>${shareBlock(d)}</div>`
+    :`<div class="mode"><h3>Daily challenge</h3><p>Same start and same options for everyone today. One try, with a result you can share.</p><button class="btn" id="dailyBtn">Play today's daily</button></div>`;
+  stage.innerHTML=`<div class="modes">${dailyCard}<div class="mode"><h3>Free play</h3><p>Random start, unlimited runs. Or type any article below to start there.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>`;
+  if(d)wireCopy(d);else $('dailyBtn').onclick=startDaily;
+  $('freeBtn').onclick=()=>newGame('free');
+}
+function render(){
+  answered=false;
+  const o=round.options;
+  stage.innerHTML=`
+    <div class="art">
+      <div><p class="label">You're on</p><h2>${esc(art.title)}</h2>${art.desc?`<p class="desc">${esc(art.desc)}</p>`:''}</div>
+      ${art.thumb?`<img src="${esc(art.thumb)}" alt="">`:''}
+    </div>
+    <p class="q">Which of these is linked from this article's introduction?</p>
+    <div class="opts">${o.map((x,i)=>`<button class="opt" data-i="${i}"><span class="k">${i+1}</span><span class="t">${esc(x.title)}${hints&&x.desc?`<small>${esc(x.desc)}</small>`:''}</span></button>`).join('')}</div>
+    <p class="note">${esc(round.label)}</p>
+    <div id="reveal"></div>`;
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.i));
+}
+function answer(i){
+  if(answered||!round)return;answered=true;
+  const o=round.options,good=o[i].ok;
+  stage.querySelectorAll('.opt').forEach((b,j)=>{
+    b.disabled=true;
+    b.classList.add(o[j].ok?'right':j===i?'wrong':'dim');
+    const t=b.querySelector('.t');if(!t.querySelector('small')&&o[j].desc)t.insertAdjacentHTML('beforeend',`<small>${esc(o[j].desc)}</small>`);
+  });
+  const s=round.correct.sentence;
+  const quote=`<blockquote><small>From the ${esc(art.title)} article</small>${esc(s.before)}<mark>${esc(s.mid)}</mark>${esc(s.after)}</blockquote>`;
+  const readLink=`<a href="${wiki(art.title)}" target="_blank" rel="noopener">Read ${esc(art.title)} on Wikipedia</a>`;
+  marks+=good?'🟩':'🟥';
+  if(good){
+    streak++;
+    if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best',best)}
+    if(mode==='daily')store.set('hyperlinked-daily',{date:today,start:trail[0],streak,marks,done:false});
+    score();
+    $('reveal').innerHTML=`<div class="reveal"><p class="verdict ok">Linked! Streak ${streak}.</p>${quote}<div class="row"><button class="btn" id="go">Hop to ${esc(round.correct.title)} →</button>${readLink}</div></div>`;
+    $('go').onclick=hop;$('go').focus();
+  }else{
+    let extra=`<div class="row"><button class="btn" id="again">New run</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
+    let d=null;
+    if(mode==='daily'){
+      d={date:today,start:trail[0],streak,marks,done:true};store.set('hyperlinked-daily',d);
+      extra=`${shareBlock(d)}<div class="row" style="margin-top:10px"><button class="btn ghost" id="again">Free play</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
+    }
+    $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked. Run over at ${streak}.</p><p>The link was <b>${esc(round.correct.title)}</b>.</p>${quote}${extra}</div>`;
+    if(d)wireCopy(d);
+    $('again').onclick=()=>newGame('free');$('back').onclick=home;
+    ($('copyBtn')||$('again')).focus();
+    round=null;nextP=null;
+  }
+}
+function prebuild(){
+  const title=round.correct.title,s1=streak+1;
+  nextP=loadArticle(title)
+    .then(async a=>{let r=null;try{r=await buildRound(a,s1,rngFor(s1,a.title))}catch(e){r=null}return {a,r}})
+    .catch(e=>e);
+}
+async function enter(a,my,prebuilt,detours=0){
+  art=a;visited.add(low(a.title));trail.push(a.title);renderTrail();
+  if(prebuilt)round=prebuilt;
+  else{
+    loading('Reading the article and picking decoys…');
+    try{round=await buildRound(a,streak,rngFor(streak,a.title))}
+    catch(e){
+      if(my!==gen)return;
+      if(e.code==='network')return errorView(NET);
+      if(detours>4)return errorView('Kept hitting dead ends. Try another start.');
+      loading('Dead end here. Hopping to a fresh page (no penalty)…');
+      const b=await loadSeed(my,null,rngFor(streak,'detour'+trail.length));
+      if(!b||my!==gen)return;
+      return enter(b,my,null,detours+1);
+    }
+    if(my!==gen)return;
+  }
+  render();prebuild();
+}
+async function loadSeed(my,first,rng,userTyped){
+  let t=first;
+  for(let i=0;i<8;i++){
+    if(!t){let n=0;do{t=pick(SEEDS,rng)}while(visited.has(low(t))&&++n<50)}
+    try{return await loadArticle(t)}
+    catch(e){
+      if(my!==gen)return null;
+      if(e.code==='network'){errorView(NET);return null}
+      if(userTyped&&i===0){errorView(e.code==='blocked'?`"${first}" is on the skip list. Try another start.`:`Couldn't find an article called "${first}".`);return null}
+      t=null;
+    }
+  }
+  errorView('Could not load a starting page.');return null;
+}
+async function hop(){
+  const my=gen;
+  const t=setTimeout(()=>loading('Following the link…'),150);
+  const res=await nextP;clearTimeout(t);
+  if(my!==gen)return;
+  if(res instanceof Error){
+    if(res.code==='network')return errorView(NET);
+    loading('Dead end here. Hopping to a fresh page (no penalty)…');
+    const b=await loadSeed(my,null,rngFor(streak,'detour'+trail.length));
+    if(b&&my===gen)enter(b,my);
+    return;
+  }
+  enter(res.a,my,res.r);
+}
+async function newGame(m,start){
+  const my=++gen;mode=m;
+  streak=0;trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
+  let a;
+  if(m==='daily'){
+    loading("Opening today's starting page…");
+    const order=shuffle(SEEDS,seeded(hashStr('daily|'+today)));
+    a=await loadSeed(my,order[0],seeded(hashStr('daily-retry|'+today)));
+    if(a&&my===gen)store.set('hyperlinked-daily',{date:today,start:a.title,streak:0,marks:'',done:false});
+  }else{
+    loading(start?`Opening ${start}…`:'Finding a starting page…');
+    a=await loadSeed(my,start,Math.random,!!start);
+  }
+  if(a&&my===gen)enter(a,my);
+}
+function startDaily(){if(daily())return home();newGame('daily')}
+
+$('startForm').onsubmit=e=>{e.preventDefault();const v=$('startInput').value.trim();newGame('free',v||undefined)};
+$('randBtn').onclick=()=>newGame('free');
+$('homeBtn').onclick=home;
+$('hintBox').onchange=e=>{hints=e.target.checked;store.set('hyperlinked-hints',hints);if(round&&!answered)render()};
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(/^[1-4]$/.test(e.key)&&round&&!answered)answer(+e.key-1);
+});
+score();
+home();
+}
+</script>
+</body>
+</html>
