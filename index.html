@@ -71,8 +71,13 @@ pre.share{margin:0 0 10px;padding:10px 12px;background:var(--bg);border:1px soli
 .start{margin-top:28px;border-top:1px solid var(--rule);padding-top:16px}
 .start form{display:flex;gap:10px;flex-wrap:wrap}
 .start input[type=text]{flex:1 1 220px;min-height:44px;padding:0 12px;font:16px inherit;font-family:inherit;border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink)}
-.hint{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--mute);margin-top:12px;cursor:pointer}
-.hint input{width:18px;height:18px}
+.life{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.pips{color:var(--link);letter-spacing:3px;font-size:18px;margin-right:4px}
+.lbtn{min-height:44px;padding:0 16px;font:inherit;font-size:14px;font-weight:600;border:1px solid var(--rule);border-radius:999px;background:var(--card);color:var(--link);cursor:pointer}
+.lbtn:hover:not(:disabled){border-color:var(--link);background:var(--soft)}
+.lbtn:disabled{opacity:.45;cursor:default}
+.lifehelp{flex-basis:100%;font-size:13px;color:var(--mute);margin:0}
+.blank{display:inline-block;min-width:4em;border-bottom:2px solid var(--link);color:var(--link);letter-spacing:1px}
 .loading{display:flex;gap:12px;align-items:center;color:var(--mute);min-height:160px;justify-content:center}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--link);animation:hop .9s ease-in-out infinite}
 @keyframes hop{50%{transform:translateY(-10px);opacity:.5}}
@@ -84,13 +89,12 @@ pre.share{margin:0 0 10px;padding:10px 12px;background:var(--bg);border:1px soli
 <div class="wrap">
   <header>
     <div><h1>Hyperlinked</h1><p class="tag" id="modeTag">Which of these does the article actually link to? One miss ends the run.</p></div>
-    <div class="score"><div><b id="streak">0</b><span>streak</span></div><div><b id="best">0</b><span>best</span></div></div>
+    <div class="score"><div><b id="streak">0</b><span>streak</span></div><div><b id="best">0</b><span>best</span></div><div><b id="lives">0</b><span>lifelines</span></div></div>
   </header>
   <main id="stage" class="card"><div class="loading"><div class="dot"></div>Loading…</div></main>
   <section class="trail" id="trailBox" hidden><p class="label">Your path so far</p><div class="chain" id="chain"></div></section>
   <section class="start">
     <form id="startForm"><input type="text" id="startInput" placeholder="Free play from any article, e.g. Honey bee" aria-label="Starting article"><button class="btn" type="submit">Start here</button><button class="btn ghost" type="button" id="randBtn">Random start</button><button class="btn ghost" type="button" id="homeBtn">Home</button></form>
-    <label class="hint"><input type="checkbox" id="hintBox"> Show short descriptions before I answer (easier)</label>
   </section>
 </div>
 <script>
@@ -264,9 +268,9 @@ async function echoPool(tok,rng){
 }
 
 /* ================= Building a round ================= */
-async function buildRound(art,s,rng){
+async function buildRound(art,s,rng,exclude=new Set()){
   const tokens=echoTokens(art.title);
-  const avail=shuffle(art.lead.filter(l=>!visited.has(low(l.title))&&low(l.title)!==low(art.title)),rng);
+  const avail=shuffle(art.lead.filter(l=>!visited.has(low(l.title))&&!exclude.has(low(l.title))&&low(l.title)!==low(art.title)),rng);
   // Prefer answers that don't echo the title and aren't giveaways; use those only when nothing else is left.
   const rank=l=>GIVE.has(low(l.title))?2:echoOf(l.title,tokens)?1:0;
   const cands=[0,1,2].flatMap(k=>avail.filter(l=>rank(l)===k));
@@ -286,7 +290,7 @@ async function buildRound(art,s,rng){
     let correct=null;
     for(const c of corrC){
       const x=info(c.title);
-      if(x&&cleanPage(x.canon,x.pg)&&!visited.has(low(x.canon))&&low(x.canon)!==low(art.title)){
+      if(x&&cleanPage(x.canon,x.pg)&&!visited.has(low(x.canon))&&!exclude.has(low(x.canon))&&low(x.canon)!==low(art.title)){
         correct={title:x.canon,desc:descOf(x.pg),sentence:c.sentence,cats:catsOf(x.pg),ok:true};break;
       }
     }
@@ -318,11 +322,11 @@ async function buildRound(art,s,rng){
 /* ================= Game state ================= */
 const $=id=>document.getElementById(id);
 const stage=$('stage');
+const LIFE_EVERY=5,LIFE_MAX=2; // earn one lifeline every 5 scored answers, hold at most 2
 let mode='free',art=null,round=null,streak=0,trail=[],visited=new Set(),nextP=null,answered=false,gen=0,marks='';
+let lives=0,assisted=false,showDesc=false,clueOn=false,crossed=new Set(),pendingMiss=false,swaps=0,swapping=false,excluded=new Set();
 let best=+(store.get('hyperlinked-best')||0);
-let hints=store.get('hyperlinked-hints')===true;
-$('hintBox').checked=hints;
-// In daily mode every random choice is seeded by date + round + article, so everyone gets the same game.
+// In daily mode every random choice is seeded by date + round number + article, so everyone gets the same game.
 const rngFor=(i,title)=>mode==='daily'?seeded(hashStr(today+'|'+i+'|'+title)):Math.random;
 const daily=()=>{const d=store.get('hyperlinked-daily');return d&&d.date===today?d:null};
 const shareText=d=>`Hyperlinked Daily · ${prettyDay}\nStarted at ${d.start}\n${d.marks||'🟥'} ${d.streak}`;
@@ -331,7 +335,7 @@ const shareText=d=>`Hyperlinked Daily · ${prettyDay}\nStarted at ${d.start}\n${
 const loading=msg=>{stage.innerHTML=`<div class="loading"><div class="dot"></div>${esc(msg)}</div>`};
 const NET="Couldn't reach Wikipedia. Check your connection and try again.";
 const errorView=msg=>{stage.innerHTML=`<p class="verdict no">Hmm.</p><p>${esc(msg)}</p><div class="row"><button class="btn" id="retry">Back to start</button></div>`;$('retry').onclick=home};
-function score(){$('streak').textContent=streak;$('best').textContent=best}
+function score(){$('streak').textContent=streak;$('best').textContent=best;$('lives').textContent=lives}
 function setTag(){
   $('modeTag').textContent=mode==='daily'?`Daily challenge · ${prettyDay} · one try`:'Free play · Which of these does the article actually link to? One miss ends the run.';
 }
@@ -350,50 +354,100 @@ function wireCopy(d){
   };
 }
 function home(){
-  gen++;mode='free';round=null;streak=0;trail=[];renderTrail();score();
+  gen++;mode='free';round=null;streak=0;lives=0;trail=[];renderTrail();score();
   $('modeTag').textContent='Which of these does the article actually link to? One miss ends the run.';
   const d=daily();
   const dailyCard=d
     ?`<div class="mode"><h3>Today's daily</h3><p>You've played today. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div><p>Streak ${d.streak}, started at ${esc(d.start)}</p>${shareBlock(d)}</div>`
     :`<div class="mode"><h3>Daily challenge</h3><p>Same start and same options for everyone today. One try, with a result you can share.</p><button class="btn" id="dailyBtn">Play today's daily</button></div>`;
-  stage.innerHTML=`<div class="modes">${dailyCard}<div class="mode"><h3>Free play</h3><p>Random start, unlimited runs. Or type any article below to start there.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>`;
+  stage.innerHTML=`<div class="modes">${dailyCard}<div class="mode"><h3>Free play</h3><p>Random start, unlimited runs. Or type any article below to start there.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>
+    <p class="note">Lifelines: earn one for every ${LIFE_EVERY} correct answers (hold up to ${LIFE_MAX}). Spend one on Descriptions, a Clue, a Swap, or a Second chance after a miss. A round you pass with a lifeline keeps you alive but doesn't add to your streak, and shows as 🟨.</p>`;
   if(d)wireCopy(d);else $('dailyBtn').onclick=startDaily;
   $('freeBtn').onclick=()=>newGame('free');
 }
 function render(){
-  answered=false;
-  const o=round.options;
+  const o=round.options,s=round.correct.sentence;
+  const canUse=lives>0&&!answered&&!pendingMiss&&!swapping;
+  const pips='●'.repeat(lives)+'○'.repeat(LIFE_MAX-lives);
   stage.innerHTML=`
     <div class="art">
       <div><p class="label">You're on</p><h2>${esc(art.title)}</h2>${art.desc?`<p class="desc">${esc(art.desc)}</p>`:''}</div>
       ${art.thumb?`<img src="${esc(art.thumb)}" alt="">`:''}
     </div>
     <p class="q">Which of these is linked from this article's introduction?</p>
-    <div class="opts">${o.map((x,i)=>`<button class="opt" data-i="${i}"><span class="k">${i+1}</span><span class="t">${esc(x.title)}${hints&&x.desc?`<small>${esc(x.desc)}</small>`:''}</span></button>`).join('')}</div>
-    <p class="note">${esc(round.label)}</p>
+    ${clueOn?`<blockquote><small>Clue: the sentence the link sits in</small>${esc(s.before)}<span class="blank">${'_'.repeat(Math.min(Math.max(s.mid.length,5),14))}</span>${esc(s.after)}</blockquote>`:''}
+    <div class="opts">${o.map((x,i)=>`<button class="opt${crossed.has(i)?' wrong':''}" data-i="${i}"${crossed.has(i)||pendingMiss||swapping?' disabled':''}><span class="k">${i+1}</span><span class="t">${esc(x.title)}${showDesc&&x.desc?`<small>${esc(x.desc)}</small>`:''}</span></button>`).join('')}</div>
+    <div class="life">
+      <span class="pips" title="Lifelines">${pips}</span>
+      <button class="lbtn" data-l="desc"${!canUse||showDesc||o.every(x=>!x.desc)?' disabled':''}>Descriptions</button>
+      <button class="lbtn" data-l="clue"${!canUse||clueOn?' disabled':''}>Clue</button>
+      <button class="lbtn" data-l="swap"${!canUse?' disabled':''}>Swap question</button>
+      <p class="lifehelp">${lives?`Each costs one lifeline.`:`No lifelines yet. Earn one every ${LIFE_EVERY} correct.`} A round passed with help doesn't add to your streak.</p>
+    </div>
+    <p class="note">${esc(round.label)}${assisted?' · Lifeline used, so this round won’t add to your streak':''}</p>
     <div id="reveal"></div>`;
   stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.i));
+  stage.querySelectorAll('.lbtn').forEach(b=>b.onclick=()=>useLife(b.dataset.l));
+}
+async function useLife(kind){
+  if(lives<1||answered||pendingMiss||swapping||!round)return;
+  const wasAssisted=assisted;
+  lives--;assisted=true;score();
+  if(kind==='desc'){showDesc=true;return render()}
+  if(kind==='clue'){clueOn=true;return render()}
+  // Swap: same article, a different question.
+  swapping=true;render();
+  $('reveal').innerHTML='<p class="note">Finding a different question…</p>';
+  const my=gen;
+  excluded.add(low(round.correct.title));
+  try{
+    const r=await buildRound(art,streak,rngFor(trail.length,art.title+'|swap'+(++swaps)),excluded);
+    if(my!==gen)return;
+    round=r;clueOn=false;crossed=new Set();swapping=false;render();prebuild();
+  }catch(e){
+    if(my!==gen)return;
+    swapping=false;lives++;assisted=wasAssisted;score();render();
+    $('reveal').innerHTML=`<p class="note">${e.code==='network'?NET:'No other question is available on this article.'} Your lifeline was refunded.</p>`;
+  }
 }
 function answer(i){
-  if(answered||!round)return;answered=true;
+  if(answered||!round||pendingMiss||swapping||crossed.has(i))return;
+  if(!round.options[i].ok&&lives>0){
+    crossed.add(i);pendingMiss=true;render();
+    $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked.</p><p>Spend a lifeline for a second chance? You'll pick again from what's left, and this round won't add to your streak.</p><div class="row"><button class="btn" id="second">Second chance (${lives} left)</button><button class="btn ghost" id="endrun">End run</button></div></div>`;
+    $('second').onclick=()=>{lives--;assisted=true;pendingMiss=false;score();render()};
+    $('endrun').onclick=()=>{pendingMiss=false;finish(i)};
+    $('second').focus();
+    return;
+  }
+  finish(i);
+}
+function finish(i){
+  answered=true;
   const o=round.options,good=o[i].ok;
   stage.querySelectorAll('.opt').forEach((b,j)=>{
-    b.disabled=true;
-    b.classList.add(o[j].ok?'right':j===i?'wrong':'dim');
+    b.disabled=true;b.classList.remove('wrong');
+    b.classList.add(o[j].ok?'right':(j===i||crossed.has(j))?'wrong':'dim');
     const t=b.querySelector('.t');if(!t.querySelector('small')&&o[j].desc)t.insertAdjacentHTML('beforeend',`<small>${esc(o[j].desc)}</small>`);
   });
+  stage.querySelectorAll('.lbtn').forEach(b=>b.disabled=true);
   const s=round.correct.sentence;
   const quote=`<blockquote><small>From the ${esc(art.title)} article</small>${esc(s.before)}<mark>${esc(s.mid)}</mark>${esc(s.after)}</blockquote>`;
   const readLink=`<a href="${wiki(art.title)}" target="_blank" rel="noopener">Read ${esc(art.title)} on Wikipedia</a>`;
-  marks+=good?'🟩':'🟥';
   if(good){
-    streak++;
-    if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best',best)}
+    let msg;
+    if(assisted){marks+='🟨';msg=`Linked! You survived with a lifeline, so your streak stays at ${streak}.`}
+    else{
+      marks+='🟩';streak++;msg=`Linked! Streak ${streak}.`;
+      if(streak%LIFE_EVERY===0)msg+=lives<LIFE_MAX?(lives++,' You earned a lifeline.'):' Lifelines are full, so no new one.';
+      if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best',best)}
+    }
     if(mode==='daily')store.set('hyperlinked-daily',{date:today,start:trail[0],streak,marks,done:false});
     score();
-    $('reveal').innerHTML=`<div class="reveal"><p class="verdict ok">Linked! Streak ${streak}.</p>${quote}<div class="row"><button class="btn" id="go">Hop to ${esc(round.correct.title)} →</button>${readLink}</div></div>`;
+    $('reveal').innerHTML=`<div class="reveal"><p class="verdict ok">${msg}</p>${quote}<div class="row"><button class="btn" id="go">Hop to ${esc(round.correct.title)} →</button>${readLink}</div></div>`;
     $('go').onclick=hop;$('go').focus();
   }else{
+    marks+='🟥';
     let extra=`<div class="row"><button class="btn" id="again">New run</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
     let d=null;
     if(mode==='daily'){
@@ -407,24 +461,26 @@ function answer(i){
     round=null;nextP=null;
   }
 }
+// Build the next round in the background, assuming this one scores. If it doesn't (lifeline used), it's rebuilt on arrival.
 function prebuild(){
-  const title=round.correct.title,s1=streak+1;
+  const title=round.correct.title,s1=streak+1,idx=trail.length+1;
   nextP=loadArticle(title)
-    .then(async a=>{let r=null;try{r=await buildRound(a,s1,rngFor(s1,a.title))}catch(e){r=null}return {a,r}})
+    .then(async a=>{let r=null;try{r=await buildRound(a,s1,rngFor(idx,a.title))}catch(e){r=null}return {a,r,s:s1}})
     .catch(e=>e);
 }
 async function enter(a,my,prebuilt,detours=0){
   art=a;visited.add(low(a.title));trail.push(a.title);renderTrail();
+  answered=false;assisted=false;showDesc=false;clueOn=false;crossed=new Set();pendingMiss=false;swaps=0;swapping=false;excluded=new Set();
   if(prebuilt)round=prebuilt;
   else{
     loading('Reading the article and picking decoys…');
-    try{round=await buildRound(a,streak,rngFor(streak,a.title))}
+    try{round=await buildRound(a,streak,rngFor(trail.length,a.title))}
     catch(e){
       if(my!==gen)return;
       if(e.code==='network')return errorView(NET);
       if(detours>4)return errorView('Kept hitting dead ends. Try another start.');
       loading('Dead end here. Hopping to a fresh page (no penalty)…');
-      const b=await loadSeed(my,null,rngFor(streak,'detour'+trail.length));
+      const b=await loadSeed(my,null,rngFor(trail.length,'detour'));
       if(!b||my!==gen)return;
       return enter(b,my,null,detours+1);
     }
@@ -454,15 +510,15 @@ async function hop(){
   if(res instanceof Error){
     if(res.code==='network')return errorView(NET);
     loading('Dead end here. Hopping to a fresh page (no penalty)…');
-    const b=await loadSeed(my,null,rngFor(streak,'detour'+trail.length));
+    const b=await loadSeed(my,null,rngFor(trail.length,'detour'));
     if(b&&my===gen)enter(b,my);
     return;
   }
-  enter(res.a,my,res.r);
+  enter(res.a,my,res.r&&res.s===streak?res.r:null);
 }
 async function newGame(m,start){
   const my=++gen;mode=m;
-  streak=0;trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
+  streak=0;lives=0;trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
   let a;
   if(m==='daily'){
     loading("Opening today's starting page…");
@@ -480,10 +536,9 @@ function startDaily(){if(daily())return home();newGame('daily')}
 $('startForm').onsubmit=e=>{e.preventDefault();const v=$('startInput').value.trim();newGame('free',v||undefined)};
 $('randBtn').onclick=()=>newGame('free');
 $('homeBtn').onclick=home;
-$('hintBox').onchange=e=>{hints=e.target.checked;store.set('hyperlinked-hints',hints);if(round&&!answered)render()};
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
-  if(/^[1-4]$/.test(e.key)&&round&&!answered)answer(+e.key-1);
+  if(/^[1-4]$/.test(e.key))answer(+e.key-1);
 });
 score();
 home();
