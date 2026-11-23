@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Wiki-linked</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,99 +10,113 @@
 <style>
 /* VOICE: playful but calm, like reading an encyclopedia with a friend
    IDEA: a Wikipedia article page — blue links, hairline rules, serif titles
-   PICTURE: the current article as a "page" card; the trail of hops as a chain
+   PICTURE: the current article with its four candidate links, all on one screen
    COLOUR and TYPE: page white/grey, link blue, wiki green for right, red-link red for wrong; Crimson Pro titles + system sans
-   LAYOUT: one column, article card, 2x2 options, reveal, trail */
+   LAYOUT: one screen, no scrolling: slim header, article, options, lifelines, last fact; popups for decisions */
 :root{color-scheme:light dark;
   --bg:light-dark(#f6f6f6,#101418);--card:light-dark(#fff,#1a1f26);--ink:light-dark(#202122,#e8eaed);
   --mute:light-dark(#54595d,#a2a9b1);--rule:light-dark(#c8ccd1,#3a414a);--link:light-dark(#3366cc,#88a3e8);
   --good:light-dark(#14866d,#3ec49d);--bad:light-dark(#d73333,#ff7a7a);--hi:light-dark(#fef6e7,#3b3220);
   --soft:light-dark(#eaf3ff,#1f2a3d)}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip}
-.wrap{max-width:780px;margin:0 auto;padding:clamp(16px,4vw,40px) max(4vw,14px) 48px}
-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:20px}
-h1{font:600 clamp(32px,6vw,44px)/1.05 "Crimson Pro",Georgia,serif;margin:0}
-.tag{color:var(--mute);font-size:14px;margin:4px 0 0}
-.score{display:flex;gap:18px;text-align:right}
-.score b{display:block;font:600 30px/1 "Crimson Pro",Georgia,serif}
-.score span{font-size:13px;color:var(--mute)}
-.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:clamp(16px,3vw,28px)}
-.art{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
-.art img{width:clamp(84px,18vw,150px);aspect-ratio:1;object-fit:cover;border-radius:4px;border:1px solid var(--rule);background:var(--bg)}
-.label{font-size:13px;color:var(--mute);margin:0 0 2px}
-h2{font:600 clamp(28px,5vw,40px)/1.08 "Crimson Pro",Georgia,serif;margin:0 0 6px;text-wrap:balance;border-bottom:1px solid var(--rule);padding-bottom:8px}
-h3{font:600 24px/1.15 "Crimson Pro",Georgia,serif;margin:0 0 6px}
-.desc{color:var(--mute);margin:0;font-style:italic}
-.q{margin:22px 0 12px;font-weight:600}
-.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;min-height:64px;padding:12px 14px;font:inherit;color:var(--link);background:var(--card);border:1px solid var(--rule);border-radius:6px;cursor:pointer;transition:background .15s,border-color .15s}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.app{height:100dvh;max-width:720px;margin:0 auto;display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--rule);flex:none}
+.brand{display:flex;flex-direction:column;align-items:flex-start;background:none;border:0;padding:0;color:var(--ink);cursor:pointer;text-align:left;font:inherit}
+.brand b{font:600 26px/1 "Crimson Pro",Georgia,serif}
+.brand span{font-size:12px;color:var(--mute);margin-top:3px}
+.stats{display:flex;gap:16px}
+.stats div{text-align:center}
+.stats b{display:block;font:600 22px/1 "Crimson Pro",Georgia,serif}
+.stats span{font-size:11px;color:var(--mute)}
+#stage{flex:1;display:flex;flex-direction:column;gap:10px;padding-top:12px;overflow-y:auto;overscroll-behavior:contain}
+#stage>*{flex:none}
+.art{display:flex;gap:12px;align-items:center}
+.art img{width:64px;height:64px;flex:none;object-fit:cover;border-radius:6px;border:1px solid var(--rule);background:var(--card)}
+.label{font-size:12px;color:var(--mute);margin:0}
+h2{font:600 clamp(24px,6.5vw,34px)/1.1 "Crimson Pro",Georgia,serif;margin:0;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+h3{font:600 22px/1.15 "Crimson Pro",Georgia,serif;margin:0}
+.desc{color:var(--mute);margin:2px 0 0;font-size:14px;font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.q{margin:2px 0 0;font-weight:600;font-size:15px}
+.clue{margin:0;padding:8px 12px;border-left:3px solid var(--link);background:var(--card);border-radius:0 6px 6px 0;font-size:14px;line-height:1.45;max-height:7.6em;overflow-y:auto}
+.blank{display:inline-block;min-width:4em;border-bottom:2px solid var(--link);color:var(--link)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;gap:10px;align-items:center;text-align:left;min-height:58px;padding:9px 12px;font:inherit;color:var(--link);background:var(--card);border:1px solid var(--rule);border-radius:8px;cursor:pointer;transition:background .15s,border-color .15s}
 .opt:hover:not(:disabled){background:var(--soft);border-color:var(--link)}
-.opt:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--link);outline-offset:2px}
-.opt .k{flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--rule);color:var(--mute);font-size:13px;display:grid;place-items:center;margin-top:1px}
-.opt .t{font-size:17px;font-weight:500;line-height:1.3}
-.opt small{display:block;color:var(--mute);font-size:13px;margin-top:3px;font-weight:400}
+.opt:focus-visible,button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+.opt .k{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--rule);color:var(--mute);font-size:12px;display:grid;place-items:center}
+.opt .t{font-size:16px;font-weight:500;line-height:1.25}
+.opt small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px;font-weight:400;line-height:1.3}
 .opt:disabled{cursor:default}
-.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card));color:var(--ink)}
-.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card));color:var(--ink)}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--card));color:var(--ink)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card));color:var(--ink);text-decoration:line-through}
 .opt.dim{opacity:.55}
-.reveal{margin-top:18px;border-top:1px solid var(--rule);padding-top:16px}
-.verdict{font:600 24px/1.2 "Crimson Pro",Georgia,serif;margin:0 0 8px}
-.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
-blockquote{margin:0 0 14px;padding:10px 14px;border-left:3px solid var(--rule);background:var(--bg);border-radius:0 4px 4px 0}
-blockquote small{display:block;color:var(--mute);font-size:13px;margin-bottom:4px}
+.life{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pips{color:var(--link);letter-spacing:3px;font-size:17px;margin-right:2px}
+.lbtn{min-height:44px;padding:0 14px;font:inherit;font-size:14px;font-weight:600;border:1px solid var(--rule);border-radius:999px;background:var(--card);color:var(--link);cursor:pointer}
+.lbtn:hover:not(:disabled){border-color:var(--link);background:var(--soft)}
+.lbtn:disabled{opacity:.4;cursor:default}
+.note{color:var(--mute);font-size:12.5px;margin:0}
+.fact{margin-top:auto;display:block;width:100%;text-align:left;font:inherit;font-size:13px;line-height:1.4;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:8px 12px;cursor:pointer}
+.fact .fs{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--mute)}
+.fact .label{color:var(--good);font-weight:600}
 mark{background:var(--hi);color:var(--link);padding:0 2px;border-radius:2px}
+blockquote{margin:0;padding:10px 14px;border-left:3px solid var(--rule);background:var(--bg);border-radius:0 6px 6px 0;font-size:15px}
+blockquote small{display:block;color:var(--mute);font-size:12px;margin-bottom:4px}
+.verdict{font:600 24px/1.2 "Crimson Pro",Georgia,serif;margin:0}
+.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.btn{min-height:44px;padding:0 18px;font:600 15px/1 inherit;font-family:inherit;border-radius:6px;border:1px solid var(--link);background:var(--link);color:#fff;cursor:pointer}
+.btn{min-height:46px;padding:0 18px;font:inherit;font-size:15px;font-weight:600;border-radius:8px;border:1px solid var(--link);background:var(--link);color:#fff;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--link)}
 a{color:var(--link)}
-.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.mode{border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
-.mode p{margin:0;color:var(--mute);font-size:15px}
-.mode .btn{align-self:flex-start;margin-top:auto}
-.diffs{display:flex;gap:0;border:1px solid var(--link);border-radius:999px;overflow:hidden;width:max-content;max-width:100%}
-.diff{min-height:44px;padding:0 22px;font:inherit;font-weight:600;border:0;border-left:1px solid var(--link);background:var(--card);color:var(--link);cursor:pointer}
+/* home */
+.diffs{display:flex;border:1px solid var(--link);border-radius:999px;overflow:hidden;width:max-content;max-width:100%;flex:none}
+.diff{min-height:44px;padding:0 20px;font:inherit;font-weight:600;border:0;border-left:1px solid var(--link);background:var(--card);color:var(--link);cursor:pointer}
 .diff:first-child{border-left:0}
 .diff.on{background:var(--link);color:#fff}
-.diffnote{margin:8px 0 16px}
-.today{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute);margin:16px 0 0}
-.marks{font-size:22px;letter-spacing:2px;line-height:1.3;word-break:break-all}
-pre.share{margin:0 0 10px;padding:10px 12px;background:var(--bg);border:1px solid var(--rule);border-radius:4px;font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
-.trail{margin-top:22px}
-.chain{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:14px}
-.chain a{text-decoration:none;padding:3px 8px;border:1px solid var(--rule);border-radius:999px;background:var(--card)}
-.chain a:hover{border-color:var(--link)}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mode{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.mode p{margin:0;color:var(--mute);font-size:14px}
+.mode .btn{align-self:flex-start;margin-top:auto}
+.marks{font-size:20px;letter-spacing:2px;line-height:1.3;word-break:break-all}
+pre.share{margin:0;padding:8px 10px;background:var(--bg);border:1px solid var(--rule);border-radius:6px;font:13px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.startf{display:flex;gap:8px}
+.startf input{flex:1;min-height:46px;padding:0 12px;font:16px/1 inherit;font-family:inherit;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--ink)}
+.today{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--mute);margin:0}
+.chain{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:13px}
+.chain a{text-decoration:none;padding:2px 8px;border:1px solid var(--rule);border-radius:999px;background:var(--card)}
 .chain i{color:var(--mute);font-style:normal}
-.note{color:var(--mute);font-size:14px;margin:10px 0 0}
-.start{margin-top:28px;border-top:1px solid var(--rule);padding-top:16px}
-.start form{display:flex;gap:10px;flex-wrap:wrap}
-.start input[type=text]{flex:1 1 220px;min-height:44px;padding:0 12px;font:16px inherit;font-family:inherit;border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink)}
-.life{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
-.pips{color:var(--link);letter-spacing:3px;font-size:18px;margin-right:4px}
-.lbtn{min-height:44px;padding:0 16px;font:inherit;font-size:14px;font-weight:600;border:1px solid var(--rule);border-radius:999px;background:var(--card);color:var(--link);cursor:pointer}
-.lbtn:hover:not(:disabled){border-color:var(--link);background:var(--soft)}
-.lbtn:disabled{opacity:.45;cursor:default}
-.lifehelp{flex-basis:100%;font-size:13px;color:var(--mute);margin:0}
-.blank{display:inline-block;min-width:4em;border-bottom:2px solid var(--link);color:var(--link);letter-spacing:1px}
-.loading{display:flex;gap:12px;align-items:center;color:var(--mute);min-height:160px;justify-content:center}
+.center{margin:auto;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.loading{margin:auto;display:flex;gap:12px;align-items:center;color:var(--mute)}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--link);animation:hop .9s ease-in-out infinite}
 @keyframes hop{50%{transform:translateY(-10px);opacity:.5}}
-@media(prefers-reduced-motion:reduce){.dot{animation:none}.opt{transition:none}}
-@media(max-width:520px){.opts,.modes{grid-template-columns:minmax(0,1fr)}.art{grid-template-columns:minmax(0,1fr)}.art img{order:-1;width:100%;aspect-ratio:16/9}}
+/* popups */
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:999px;font-weight:600;font-size:15px;color:#fff;background:var(--good);box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;animation:pop .2s ease-out}
+.toast.info{background:var(--link)}
+@keyframes pop{from{transform:translate(-50%,-8px);opacity:0}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:30;padding:10px max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.modal[hidden],.toast[hidden]{display:none}
+.sheet{background:var(--card);border-radius:14px;width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 40px rgba(0,0,0,.3);animation:rise .2s ease-out}
+.sheet p{margin:0}
+@keyframes rise{from{transform:translateY(16px);opacity:0}}
+@media(min-width:600px){.modal{align-items:center}}
+@media(max-width:560px){.opts,.modes{grid-template-columns:minmax(0,1fr)}.opt{min-height:50px}.mode{padding:12px}}
+@media(max-height:720px){#stage{gap:8px;padding-top:10px}.art .label,.homenote{display:none}.desc{-webkit-line-clamp:1}.fact .fs{-webkit-line-clamp:1}.mode{padding:10px 12px;gap:6px}}
+@media(max-height:640px){.art img{width:48px;height:48px}h2{font-size:24px}.opt{min-height:44px;padding:6px 12px}.opt small{font-size:12px}.q{font-size:14px}.clue{font-size:13px;padding:6px 10px}.tier{display:none}.brand b{font-size:22px}.clue~.fact{display:none}}
+@media(prefers-reduced-motion:reduce){.dot,.toast,.sheet{animation:none}.opt{transition:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div><h1>Wiki-linked</h1><p class="tag" id="modeTag">Which of these does the article actually link to? One miss ends the run.</p></div>
-    <div class="score"><div><b id="streak">0</b><span>streak</span></div><div><b id="best">0</b><span>best</span></div><div><b id="lives">0</b><span>lifelines</span></div></div>
+<div class="app">
+  <header class="top">
+    <button class="brand" id="brand" aria-label="Wiki-linked home"><b>Wiki-linked</b><span id="modeTag">Which link is real?</span></button>
+    <div class="stats"><div><b id="streak">0</b><span>streak</span></div><div><b id="best">0</b><span>best</span></div><div><b id="lives">0</b><span>lifelines</span></div></div>
   </header>
-  <main id="stage" class="card"><div class="loading"><div class="dot"></div>Loading…</div></main>
-  <section class="trail" id="trailBox" hidden><p class="label">Your path so far</p><div class="chain" id="chain"></div></section>
-  <section class="start">
-    <form id="startForm"><input type="text" id="startInput" placeholder="Free play from any article, e.g. Honey bee" aria-label="Starting article"><button class="btn" type="submit">Start here</button><button class="btn ghost" type="button" id="randBtn">Random start</button><button class="btn ghost" type="button" id="homeBtn">Home</button></form>
-  </section>
+  <main id="stage"><div class="loading"><div class="dot"></div>Loading…</div></main>
 </div>
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="modal" class="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <script>
 {
 /* ================= Settings you can edit ================= */
@@ -191,8 +205,8 @@ function sentenceAround(text,s,len){
   for(let i=s-1;i>0;i--){if('.!?'.includes(text[i-1])&&/\s/.test(text[i])){a=i;break}}
   for(let i=s+len;i<text.length;i++){if('.!?'.includes(text[i])&&(i+1>=text.length||/\s/.test(text[i+1]))){b=i+1;break}}
   let pre='',post='';
-  if(s-a>160){a=s-150;pre='…'}
-  if(b-(s+len)>180){b=s+len+170;post='…'}
+  if(s-a>120){a=s-110;pre='…'}
+  if(b-(s+len)>140){b=s+len+130;post='…'}
   return {before:pre+text.slice(a,s).replace(/^\s+/,''),mid:text.slice(s,s+len),after:text.slice(s+len,b).replace(/\s+$/,'')+post};
 }
 function extractLead(html,linkSet){
@@ -342,7 +356,7 @@ const can=k=>M().allow.includes(k);
 const sfx=d=>d==='medium'?'':'-'+d;
 const salt=d=>d==='medium'?'':'|'+d;
 const bestOf=d=>+(store.get('hyperlinked-best'+sfx(d))||0);
-let mode='free',art=null,round=null,streak=0,trail=[],visited=new Set(),nextP=null,answered=false,gen=0,marks='';
+let mode='free',art=null,round=null,streak=0,trail=[],visited=new Set(),nextP=null,answered=false,gen=0,marks='',lastFact=null;
 let lives=0,assisted=false,showDesc=false,clueOn=false,crossed=new Set(),pendingMiss=false,swaps=0,swapping=false,excluded=new Set();
 let best=bestOf(diff);
 // In daily mode every random choice is seeded by date + round number + article, so everyone gets the same game.
@@ -350,22 +364,27 @@ const rngFor=(i,title)=>mode==='daily'?seeded(hashStr(today+salt(diff)+'|'+i+'|'
 const daily=(d=diff)=>{const r=store.get('hyperlinked-daily'+sfx(d));return r&&r.date===today?r:null};
 const saveDaily=r=>store.set('hyperlinked-daily'+sfx(diff),r);
 const shareText=d=>`Wiki-linked Daily (${MODES[d.diff||'medium'].label}) · ${prettyDay}\nStarted at ${d.start}\n${d.marks||'🟥'} ${d.streak}`;
+const inRun=()=>!!round&&!answered;
 
-/* ================= UI ================= */
-const loading=msg=>{stage.innerHTML=`<div class="loading"><div class="dot"></div>${esc(msg)}</div>`};
+/* ================= UI helpers ================= */
 const NET="Couldn't reach Wikipedia. Check your connection and try again.";
-const errorView=msg=>{stage.innerHTML=`<p class="verdict no">Hmm.</p><p>${esc(msg)}</p><div class="row"><button class="btn" id="retry">Back to start</button></div>`;$('retry').onclick=home};
+const loading=msg=>{stage.innerHTML=`<div class="loading"><div class="dot"></div>${esc(msg)}</div>`};
+const modal=$('modal'),sheet=$('sheet');
+let modalDismiss=false;
+function openModal(html,dismissable){sheet.innerHTML=html;modalDismiss=!!dismissable;modal.hidden=false;const f=sheet.querySelector('.btn');if(f)f.focus()}
+function closeModal(){modal.hidden=true;sheet.innerHTML=''}
+modal.onclick=e=>{if(e.target===modal&&modalDismiss)closeModal()};
+let toastT=null;
+function toast(msg,kind='ok',ms=1800){const t=$('toast');t.textContent=msg;t.className='toast'+(kind==='ok'?'':' '+kind);t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms)}
+const errorView=msg=>{closeModal();stage.innerHTML=`<div class="center"><p class="verdict no">Hmm.</p><p>${esc(msg)}</p><button class="btn" id="retry">Back to start</button></div>`;$('retry').onclick=home};
 function score(){$('streak').textContent=streak;$('best').textContent=best;$('lives').textContent=lives}
-function setTag(){
-  $('modeTag').textContent=mode==='daily'?`${M().label} daily · ${prettyDay} · one try`:`${M().label} free play · Which of these does the article actually link to? One miss ends the run.`;
+function setTag(){$('modeTag').textContent=round||mode==='daily'&&trail.length?`${M().label} · ${mode==='daily'?'daily':'free play'}`:'Which link is real?'}
+const quoteHTML=(s,from)=>`<blockquote><small>From the ${esc(from)} article</small>${esc(s.before)}<mark>${esc(s.mid)}</mark>${esc(s.after)}</blockquote>`;
+function trailHTML(){
+  const items=trail.length>10?[trail[0],'…',...trail.slice(-8)]:trail;
+  return items.map((t,i)=>(i?'<i>→</i>':'')+(t==='…'?'<i>…</i>':`<a href="${wiki(t)}" target="_blank" rel="noopener">${esc(t)}</a>`)).join('');
 }
-function renderTrail(){
-  $('trailBox').hidden=!trail.length;
-  $('chain').innerHTML=trail.map((t,i)=>(i?'<i>→</i>':'')+`<a href="${wiki(t)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('');
-}
-function shareBlock(d){
-  return `<pre class="share" id="shareTxt">${esc(shareText(d))}</pre><button class="btn" id="copyBtn">Copy result</button>`;
-}
+const shareBlock=d=>`<pre class="share" id="shareTxt">${esc(shareText(d))}</pre><button class="btn" id="copyBtn">Copy result</button>`;
 function wireCopy(d){
   const b=$('copyBtn');if(!b)return;
   b.onclick=async()=>{
@@ -373,46 +392,58 @@ function wireCopy(d){
     catch(e){const r=document.createRange();r.selectNodeContents($('shareTxt'));const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected, press Ctrl+C'}
   };
 }
+function showFact(){
+  const f=lastFact;if(!f)return;
+  openModal(`<p class="label">${esc(f.from)} links to <b>${esc(f.to)}</b></p>${quoteHTML(f.s,f.from)}
+    <p><a href="${wiki(f.from)}" target="_blank" rel="noopener">Read ${esc(f.from)} on Wikipedia</a></p>
+    <div class="row"><button class="btn" id="mClose">Back to the game</button></div>`,true);
+  $('mClose').onclick=closeModal;
+}
+
+/* ================= Screens ================= */
 function home(){
-  gen++;mode='free';round=null;streak=0;lives=0;trail=[];best=bestOf(diff);renderTrail();score();
-  $('modeTag').textContent='Which of these does the article actually link to? One miss ends the run.';
+  gen++;mode='free';round=null;art=null;streak=0;lives=0;trail=[];lastFact=null;best=bestOf(diff);closeModal();score();setTag();
   const d=daily();
-  const picker=`<div class="diffs" role="radiogroup" aria-label="Difficulty">${Object.entries(MODES).map(([k,m])=>`<button class="diff${k===diff?' on':''}" role="radio" aria-checked="${k===diff}" data-d="${k}">${m.label}</button>`).join('')}</div><p class="note diffnote">${esc(M().blurb)}</p>`;
+  const picker=`<div class="diffs" role="radiogroup" aria-label="Difficulty">${Object.entries(MODES).map(([k,m])=>`<button class="diff${k===diff?' on':''}" role="radio" aria-checked="${k===diff}" data-d="${k}">${m.label}</button>`).join('')}</div><p class="note">${esc(M().blurb)}</p>`;
   const todays=Object.keys(MODES).map(k=>{const r=daily(k);return `<span>${MODES[k].label}: ${r?`${r.marks||'🟥'} ${r.streak}`:'not played'}</span>`}).join('');
   const dailyCard=d
-    ?`<div class="mode"><h3>${M().label} daily</h3><p>You've played today's ${M().label.toLowerCase()} daily. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div><p>Streak ${d.streak}, started at ${esc(d.start)}</p>${shareBlock(d)}</div>`
-    :`<div class="mode"><h3>${M().label} daily</h3><p>Same start and same options for everyone on ${M().label.toLowerCase()} today. One try, with a result you can share.</p><button class="btn" id="dailyBtn">Play today's ${M().label.toLowerCase()} daily</button></div>`;
-  stage.innerHTML=`${picker}<div class="modes">${dailyCard}<div class="mode"><h3>${M().label} free play</h3><p>Random start, unlimited runs. Or type any article below to start there. Best: ${best}.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>
-    <p class="today">Today's dailies: ${todays}</p>
-    <p class="note">Lifelines: earn one for every ${LIFE_EVERY} correct answers (hold up to ${LIFE_MAX}). A round you pass with a lifeline keeps you alive but doesn't add to your streak, and shows as 🟨.</p>`;
+    ?`<div class="mode"><h3>${M().label} daily</h3><p>Played today: streak ${d.streak}. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div>${shareBlock(d)}</div>`
+    :`<div class="mode"><h3>${M().label} daily</h3><p>Same start and options for everyone today. One try.</p><button class="btn" id="dailyBtn">Play daily</button></div>`;
+  stage.innerHTML=`${picker}
+    <div class="modes">${dailyCard}<div class="mode"><h3>${M().label} free play</h3><p>Unlimited runs from a random page. Best: ${best}.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>
+    <form class="startf" id="startForm"><input type="text" id="startInput" placeholder="Or start from any article" aria-label="Starting article" enterkeyhint="go"><button class="btn ghost" type="submit">Go</button></form>
+    <p class="today">Today: ${todays}</p>
+    <p class="note homenote">Lifelines: earn one per ${LIFE_EVERY} correct (hold ${LIFE_MAX}). A round passed with help keeps you alive but doesn't score, and shows as 🟨.</p>`;
   if(d)wireCopy(d);else $('dailyBtn').onclick=startDaily;
   $('freeBtn').onclick=()=>newGame('free');
+  $('startForm').onsubmit=e=>{e.preventDefault();const v=$('startInput').value.trim();newGame('free',v||undefined)};
   stage.querySelectorAll('.diff').forEach(b=>b.onclick=()=>{diff=b.dataset.d;store.set('hyperlinked-diff',diff);home()});
 }
 function render(){
   const o=round.options,s=round.correct.sentence;
   const canUse=lives>0&&!answered&&!pendingMiss&&!swapping;
-  const pips='●'.repeat(lives)+'○'.repeat(LIFE_MAX-lives);
+  const pips='●'.repeat(lives)+'○'.repeat(Math.max(0,LIFE_MAX-lives));
   stage.innerHTML=`
-    <div class="art">
-      <div><p class="label">You're on</p><h2>${esc(art.title)}</h2>${art.desc?`<p class="desc">${esc(art.desc)}</p>`:''}</div>
-      ${art.thumb?`<img src="${esc(art.thumb)}" alt="">`:''}
-    </div>
-    <p class="q">Which of these is linked from this article's introduction?</p>
-    ${clueOn?`<blockquote><small>Clue: the sentence the link sits in</small>${esc(s.before)}<span class="blank">${'_'.repeat(Math.min(Math.max(s.mid.length,5),14))}</span>${esc(s.after)}</blockquote>`:''}
+    <div class="art">${art.thumb?`<img src="${esc(art.thumb)}" alt="">`:''}
+      <div><p class="label">You're on</p><h2>${esc(art.title)}</h2>${art.desc?`<p class="desc">${esc(art.desc)}</p>`:''}</div></div>
+    ${clueOn?`<p class="clue"><span class="label">Clue · </span>${esc(s.before)}<span class="blank">${'_'.repeat(Math.min(Math.max(s.mid.length,5),12))}</span>${esc(s.after)}</p>`:''}
+    <p class="q">Which of these is linked from its introduction?</p>
     <div class="opts">${o.map((x,i)=>`<button class="opt${crossed.has(i)?' wrong':''}" data-i="${i}"${crossed.has(i)||pendingMiss||swapping?' disabled':''}><span class="k">${i+1}</span><span class="t">${esc(x.title)}${showDesc&&x.desc?`<small>${esc(x.desc)}</small>`:''}</span></button>`).join('')}</div>
     <div class="life">
-      <span class="pips" title="Lifelines">${pips}</span>
+      <span class="pips" aria-label="${lives} lifelines">${pips}</span>
       ${can('desc')?`<button class="lbtn" data-l="desc"${!canUse||showDesc||o.every(x=>!x.desc)?' disabled':''}>Descriptions</button>`:''}
       ${can('clue')?`<button class="lbtn" data-l="clue"${!canUse||clueOn?' disabled':''}>Clue</button>`:''}
-      ${can('swap')?`<button class="lbtn" data-l="swap"${!canUse?' disabled':''}>Swap question</button>`:''}
-      <p class="lifehelp">${M().label}${can('second')?'':' (Descriptions only, no second chances)'}. ${lives?`Each costs one lifeline.`:`No lifelines yet. Earn one every ${LIFE_EVERY} correct.`} A round passed with help doesn't add to your streak.</p>
+      ${can('swap')?`<button class="lbtn" data-l="swap"${!canUse?' disabled':''}>Swap</button>`:''}
     </div>
-    <p class="note">${esc(round.label)}${assisted?' · Lifeline used, so this round won’t add to your streak':''}</p>
-    <div id="reveal"></div>`;
+    <p class="note${assisted?'':' tier'}">${esc(round.label)}${assisted?' · Lifeline used: this round won’t score':''}</p>
+    ${lastFact?`<button class="fact" id="factBtn"><span class="label">Last link: ${esc(lastFact.from)} → ${esc(lastFact.to)}</span><span class="fs">${esc(lastFact.s.before)}<mark>${esc(lastFact.s.mid)}</mark>${esc(lastFact.s.after)}</span></button>`:''}`;
+  stage.scrollTop=0;
   stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.i));
   stage.querySelectorAll('.lbtn').forEach(b=>b.onclick=()=>useLife(b.dataset.l));
+  if(lastFact)$('factBtn').onclick=showFact;
 }
+
+/* ================= Play ================= */
 async function useLife(kind){
   if(lives<1||answered||pendingMiss||swapping||!round||!can(kind))return;
   const wasAssisted=assisted;
@@ -420,28 +451,28 @@ async function useLife(kind){
   if(kind==='desc'){showDesc=true;return render()}
   if(kind==='clue'){clueOn=true;return render()}
   // Swap: same article, a different question.
-  swapping=true;render();
-  $('reveal').innerHTML='<p class="note">Finding a different question…</p>';
+  swapping=true;render();toast('Finding a different question…','info',8000);
   const my=gen;
   excluded.add(low(round.correct.title));
   try{
     const r=await buildRound(art,streak,rngFor(trail.length,art.title+'|swap'+(++swaps)),excluded);
     if(my!==gen)return;
-    round=r;clueOn=false;crossed=new Set();swapping=false;render();prebuild();
+    round=r;clueOn=false;crossed=new Set();swapping=false;$('toast').hidden=true;render();prebuild();
   }catch(e){
     if(my!==gen)return;
     swapping=false;lives++;assisted=wasAssisted;score();render();
-    $('reveal').innerHTML=`<p class="note">${e.code==='network'?NET:'No other question is available on this article.'} Your lifeline was refunded.</p>`;
+    toast(e.code==='network'?"Couldn't reach Wikipedia. Lifeline refunded.":'No other question here. Lifeline refunded.','info',3000);
   }
 }
 function answer(i){
-  if(answered||!round||pendingMiss||swapping||crossed.has(i))return;
+  if(answered||!round||pendingMiss||swapping||crossed.has(i)||!modal.hidden)return;
   if(!round.options[i].ok&&lives>0&&can('second')){
     crossed.add(i);pendingMiss=true;render();
-    $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked.</p><p>Spend a lifeline for a second chance? You'll pick again from what's left, and this round won't add to your streak.</p><div class="row"><button class="btn" id="second">Second chance (${lives} left)</button><button class="btn ghost" id="endrun">End run</button></div></div>`;
-    $('second').onclick=()=>{lives--;assisted=true;pendingMiss=false;score();render()};
-    $('endrun').onclick=()=>{pendingMiss=false;finish(i)};
-    $('second').focus();
+    openModal(`<p class="verdict no">Not linked.</p>
+      <p>Spend a lifeline for a second chance? You'll pick again from what's left, and this round won't score.</p>
+      <div class="row"><button class="btn" id="second">Second chance (${lives} left)</button><button class="btn ghost" id="endrun">End run</button></div>`);
+    $('second').onclick=()=>{lives--;assisted=true;pendingMiss=false;score();closeModal();render()};
+    $('endrun').onclick=()=>{pendingMiss=false;closeModal();finish(i)};
     return;
   }
   finish(i);
@@ -452,36 +483,34 @@ function finish(i){
   stage.querySelectorAll('.opt').forEach((b,j)=>{
     b.disabled=true;b.classList.remove('wrong');
     b.classList.add(o[j].ok?'right':(j===i||crossed.has(j))?'wrong':'dim');
-    const t=b.querySelector('.t');if(!t.querySelector('small')&&o[j].desc)t.insertAdjacentHTML('beforeend',`<small>${esc(o[j].desc)}</small>`);
   });
   stage.querySelectorAll('.lbtn').forEach(b=>b.disabled=true);
-  const s=round.correct.sentence;
-  const quote=`<blockquote><small>From the ${esc(art.title)} article</small>${esc(s.before)}<mark>${esc(s.mid)}</mark>${esc(s.after)}</blockquote>`;
-  const readLink=`<a href="${wiki(art.title)}" target="_blank" rel="noopener">Read ${esc(art.title)} on Wikipedia</a>`;
   if(good){
     let msg;
-    if(assisted){marks+='🟨';msg=`Linked! You survived with a lifeline, so your streak stays at ${streak}.`}
+    if(assisted){marks+='🟨';msg='Linked! Survived, no point'}
     else{
-      marks+='🟩';streak++;msg=`Linked! Streak ${streak}.`;
-      if(streak%LIFE_EVERY===0)msg+=lives<LIFE_MAX?(lives++,' You earned a lifeline.'):' Lifelines are full, so no new one.';
+      marks+='🟩';streak++;msg=`Linked! Streak ${streak}`;
+      if(streak%LIFE_EVERY===0&&lives<LIFE_MAX){lives++;msg+=' · +1 lifeline'}
       if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best'+sfx(diff),best)}
     }
+    lastFact={from:art.title,to:round.correct.title,s:round.correct.sentence};
     if(mode==='daily')saveDaily({date:today,diff,start:trail[0],streak,marks,done:false});
-    score();
-    $('reveal').innerHTML=`<div class="reveal"><p class="verdict ok">${msg}</p>${quote}<div class="row"><button class="btn" id="go">Hop to ${esc(round.correct.title)} →</button>${readLink}</div></div>`;
-    $('go').onclick=hop;$('go').focus();
+    score();toast(msg);
+    const my=gen;setTimeout(()=>{if(my===gen)hop()},650);
   }else{
     marks+='🟥';
-    let extra=`<div class="row"><button class="btn" id="again">New run</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
     let d=null;
-    if(mode==='daily'){
-      d={date:today,diff,start:trail[0],streak,marks,done:true};saveDaily(d);
-      extra=`${shareBlock(d)}<div class="row" style="margin-top:10px"><button class="btn ghost" id="again">Free play</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
-    }
-    $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked. Run over at ${streak}.</p><p>The link was <b>${esc(round.correct.title)}</b>.</p>${quote}${extra}</div>`;
+    if(mode==='daily'){d={date:today,diff,start:trail[0],streak,marks,done:true};saveDaily(d)}
+    const c=round.correct;
+    openModal(`<p class="verdict no">Not linked. Run over at ${streak}.</p>
+      <p>The link was <b>${esc(c.title)}</b>.</p>
+      ${quoteHTML(c.sentence,art.title)}
+      ${d?`<div class="marks">${d.marks}</div>${shareBlock(d)}`:''}
+      <p class="label">Your path</p><div class="chain">${trailHTML()}</div>
+      <div class="row"><button class="btn${d?' ghost':''}" id="again">${d?'Free play':'New run'}</button><button class="btn ghost" id="back">Home</button></div>
+      <p><a href="${wiki(art.title)}" target="_blank" rel="noopener">Read ${esc(art.title)} on Wikipedia</a></p>`);
     if(d)wireCopy(d);
     $('again').onclick=()=>newGame('free');$('back').onclick=home;
-    ($('copyBtn')||$('again')).focus();
     round=null;nextP=null;
   }
 }
@@ -493,10 +522,11 @@ function prebuild(){
     .catch(e=>e);
 }
 async function enter(a,my,prebuilt,detours=0){
-  art=a;visited.add(low(a.title));trail.push(a.title);renderTrail();
+  art=a;visited.add(low(a.title));trail.push(a.title);
   answered=false;assisted=false;showDesc=false;clueOn=false;crossed=new Set();pendingMiss=false;swaps=0;swapping=false;excluded=new Set();
   if(prebuilt)round=prebuilt;
   else{
+    round=null;
     loading('Reading the article and picking decoys…');
     try{round=await buildRound(a,streak,rngFor(trail.length,a.title))}
     catch(e){
@@ -510,7 +540,7 @@ async function enter(a,my,prebuilt,detours=0){
     }
     if(my!==gen)return;
   }
-  render();prebuild();
+  setTag();render();prebuild();
 }
 async function loadSeed(my,first,rng,userTyped){
   let t=first;
@@ -528,7 +558,7 @@ async function loadSeed(my,first,rng,userTyped){
 }
 async function hop(){
   const my=gen;
-  const t=setTimeout(()=>loading('Following the link…'),150);
+  const t=setTimeout(()=>{if(my===gen)loading('Following the link…')},150);
   const res=await nextP;clearTimeout(t);
   if(my!==gen)return;
   if(res instanceof Error){
@@ -541,8 +571,8 @@ async function hop(){
   enter(res.a,my,res.r&&res.s===streak?res.r:null);
 }
 async function newGame(m,start){
-  const my=++gen;mode=m;
-  streak=0;lives=M().start;best=bestOf(diff);trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
+  const my=++gen;mode=m;closeModal();
+  streak=0;lives=M().start;best=bestOf(diff);trail=[];visited=new Set();round=null;nextP=null;marks='';lastFact=null;score();setTag();
   let a;
   if(m==='daily'){
     loading("Opening today's starting page…");
@@ -557,11 +587,16 @@ async function newGame(m,start){
 }
 function startDaily(){if(daily())return home();newGame('daily')}
 
-$('startForm').onsubmit=e=>{e.preventDefault();const v=$('startInput').value.trim();newGame('free',v||undefined)};
-$('randBtn').onclick=()=>newGame('free');
-$('homeBtn').onclick=home;
+// Tapping the title goes home; mid-run it asks first.
+$('brand').onclick=()=>{
+  if(!inRun())return home();
+  openModal(`<p class="verdict">Leave this run?</p><p>Your streak ends here${mode==='daily'?', and it counts as today’s daily try':''}.</p>
+    <div class="row"><button class="btn" id="stay">Keep playing</button><button class="btn ghost" id="leave">Leave</button></div>`,true);
+  $('stay').onclick=closeModal;$('leave').onclick=home;
+};
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
+  if(e.key==='Escape'&&!modal.hidden&&modalDismiss)return closeModal();
   if(/^[1-4]$/.test(e.key))answer(+e.key-1);
 });
 score();
