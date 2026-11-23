@@ -60,6 +60,12 @@ a{color:var(--link)}
 .mode{border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
 .mode p{margin:0;color:var(--mute);font-size:15px}
 .mode .btn{align-self:flex-start;margin-top:auto}
+.diffs{display:flex;gap:0;border:1px solid var(--link);border-radius:999px;overflow:hidden;width:max-content;max-width:100%}
+.diff{min-height:44px;padding:0 22px;font:inherit;font-weight:600;border:0;border-left:1px solid var(--link);background:var(--card);color:var(--link);cursor:pointer}
+.diff:first-child{border-left:0}
+.diff.on{background:var(--link);color:#fff}
+.diffnote{margin:8px 0 16px}
+.today{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute);margin:16px 0 0}
 .marks{font-size:22px;letter-spacing:2px;line-height:1.3;word-break:break-all}
 pre.share{margin:0 0 10px;padding:10px 12px;background:var(--bg);border:1px solid var(--rule);border-radius:4px;font:14px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
 .trail{margin-top:22px}
@@ -323,13 +329,27 @@ async function buildRound(art,s,rng,exclude=new Set()){
 const $=id=>document.getElementById(id);
 const stage=$('stage');
 const LIFE_EVERY=5,LIFE_MAX=2; // earn one lifeline every 5 scored answers, hold at most 2
+// Difficulty modes: how many lifelines you start with, and which ones exist.
+const MODES={
+  easy:{label:'Easy',start:2,allow:['desc','clue','swap','second'],blurb:'Start with 2 lifelines, all four kinds available.'},
+  medium:{label:'Medium',start:0,allow:['desc','clue','swap','second'],blurb:'Start with no lifelines; earn them as you go.'},
+  hard:{label:'Hard',start:0,allow:['desc'],blurb:'Only the Descriptions lifeline. No clues, swaps or second chances.'}
+};
+let diff=MODES[store.get('hyperlinked-diff')]?store.get('hyperlinked-diff'):'medium';
+const M=()=>MODES[diff];
+const can=k=>M().allow.includes(k);
+// Medium keeps the original storage keys and daily seed, so earlier scores and today's medium daily carry over.
+const sfx=d=>d==='medium'?'':'-'+d;
+const salt=d=>d==='medium'?'':'|'+d;
+const bestOf=d=>+(store.get('hyperlinked-best'+sfx(d))||0);
 let mode='free',art=null,round=null,streak=0,trail=[],visited=new Set(),nextP=null,answered=false,gen=0,marks='';
 let lives=0,assisted=false,showDesc=false,clueOn=false,crossed=new Set(),pendingMiss=false,swaps=0,swapping=false,excluded=new Set();
-let best=+(store.get('hyperlinked-best')||0);
+let best=bestOf(diff);
 // In daily mode every random choice is seeded by date + round number + article, so everyone gets the same game.
-const rngFor=(i,title)=>mode==='daily'?seeded(hashStr(today+'|'+i+'|'+title)):Math.random;
-const daily=()=>{const d=store.get('hyperlinked-daily');return d&&d.date===today?d:null};
-const shareText=d=>`Hyperlinked Daily · ${prettyDay}\nStarted at ${d.start}\n${d.marks||'🟥'} ${d.streak}`;
+const rngFor=(i,title)=>mode==='daily'?seeded(hashStr(today+salt(diff)+'|'+i+'|'+title)):Math.random;
+const daily=(d=diff)=>{const r=store.get('hyperlinked-daily'+sfx(d));return r&&r.date===today?r:null};
+const saveDaily=r=>store.set('hyperlinked-daily'+sfx(diff),r);
+const shareText=d=>`Hyperlinked Daily (${MODES[d.diff||'medium'].label}) · ${prettyDay}\nStarted at ${d.start}\n${d.marks||'🟥'} ${d.streak}`;
 
 /* ================= UI ================= */
 const loading=msg=>{stage.innerHTML=`<div class="loading"><div class="dot"></div>${esc(msg)}</div>`};
@@ -337,7 +357,7 @@ const NET="Couldn't reach Wikipedia. Check your connection and try again.";
 const errorView=msg=>{stage.innerHTML=`<p class="verdict no">Hmm.</p><p>${esc(msg)}</p><div class="row"><button class="btn" id="retry">Back to start</button></div>`;$('retry').onclick=home};
 function score(){$('streak').textContent=streak;$('best').textContent=best;$('lives').textContent=lives}
 function setTag(){
-  $('modeTag').textContent=mode==='daily'?`Daily challenge · ${prettyDay} · one try`:'Free play · Which of these does the article actually link to? One miss ends the run.';
+  $('modeTag').textContent=mode==='daily'?`${M().label} daily · ${prettyDay} · one try`:`${M().label} free play · Which of these does the article actually link to? One miss ends the run.`;
 }
 function renderTrail(){
   $('trailBox').hidden=!trail.length;
@@ -354,16 +374,20 @@ function wireCopy(d){
   };
 }
 function home(){
-  gen++;mode='free';round=null;streak=0;lives=0;trail=[];renderTrail();score();
+  gen++;mode='free';round=null;streak=0;lives=0;trail=[];best=bestOf(diff);renderTrail();score();
   $('modeTag').textContent='Which of these does the article actually link to? One miss ends the run.';
   const d=daily();
+  const picker=`<div class="diffs" role="radiogroup" aria-label="Difficulty">${Object.entries(MODES).map(([k,m])=>`<button class="diff${k===diff?' on':''}" role="radio" aria-checked="${k===diff}" data-d="${k}">${m.label}</button>`).join('')}</div><p class="note diffnote">${esc(M().blurb)}</p>`;
+  const todays=Object.keys(MODES).map(k=>{const r=daily(k);return `<span>${MODES[k].label}: ${r?`${r.marks||'🟥'} ${r.streak}`:'not played'}</span>`}).join('');
   const dailyCard=d
-    ?`<div class="mode"><h3>Today's daily</h3><p>You've played today. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div><p>Streak ${d.streak}, started at ${esc(d.start)}</p>${shareBlock(d)}</div>`
-    :`<div class="mode"><h3>Daily challenge</h3><p>Same start and same options for everyone today. One try, with a result you can share.</p><button class="btn" id="dailyBtn">Play today's daily</button></div>`;
-  stage.innerHTML=`<div class="modes">${dailyCard}<div class="mode"><h3>Free play</h3><p>Random start, unlimited runs. Or type any article below to start there.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>
-    <p class="note">Lifelines: earn one for every ${LIFE_EVERY} correct answers (hold up to ${LIFE_MAX}). Spend one on Descriptions, a Clue, a Swap, or a Second chance after a miss. A round you pass with a lifeline keeps you alive but doesn't add to your streak, and shows as 🟨.</p>`;
+    ?`<div class="mode"><h3>${M().label} daily</h3><p>You've played today's ${M().label.toLowerCase()} daily. Back tomorrow for a new one.</p><div class="marks">${d.marks||'🟥'}</div><p>Streak ${d.streak}, started at ${esc(d.start)}</p>${shareBlock(d)}</div>`
+    :`<div class="mode"><h3>${M().label} daily</h3><p>Same start and same options for everyone on ${M().label.toLowerCase()} today. One try, with a result you can share.</p><button class="btn" id="dailyBtn">Play today's ${M().label.toLowerCase()} daily</button></div>`;
+  stage.innerHTML=`${picker}<div class="modes">${dailyCard}<div class="mode"><h3>${M().label} free play</h3><p>Random start, unlimited runs. Or type any article below to start there. Best: ${best}.</p><button class="btn ghost" id="freeBtn">Random start</button></div></div>
+    <p class="today">Today's dailies: ${todays}</p>
+    <p class="note">Lifelines: earn one for every ${LIFE_EVERY} correct answers (hold up to ${LIFE_MAX}). A round you pass with a lifeline keeps you alive but doesn't add to your streak, and shows as 🟨.</p>`;
   if(d)wireCopy(d);else $('dailyBtn').onclick=startDaily;
   $('freeBtn').onclick=()=>newGame('free');
+  stage.querySelectorAll('.diff').forEach(b=>b.onclick=()=>{diff=b.dataset.d;store.set('hyperlinked-diff',diff);home()});
 }
 function render(){
   const o=round.options,s=round.correct.sentence;
@@ -379,10 +403,10 @@ function render(){
     <div class="opts">${o.map((x,i)=>`<button class="opt${crossed.has(i)?' wrong':''}" data-i="${i}"${crossed.has(i)||pendingMiss||swapping?' disabled':''}><span class="k">${i+1}</span><span class="t">${esc(x.title)}${showDesc&&x.desc?`<small>${esc(x.desc)}</small>`:''}</span></button>`).join('')}</div>
     <div class="life">
       <span class="pips" title="Lifelines">${pips}</span>
-      <button class="lbtn" data-l="desc"${!canUse||showDesc||o.every(x=>!x.desc)?' disabled':''}>Descriptions</button>
-      <button class="lbtn" data-l="clue"${!canUse||clueOn?' disabled':''}>Clue</button>
-      <button class="lbtn" data-l="swap"${!canUse?' disabled':''}>Swap question</button>
-      <p class="lifehelp">${lives?`Each costs one lifeline.`:`No lifelines yet. Earn one every ${LIFE_EVERY} correct.`} A round passed with help doesn't add to your streak.</p>
+      ${can('desc')?`<button class="lbtn" data-l="desc"${!canUse||showDesc||o.every(x=>!x.desc)?' disabled':''}>Descriptions</button>`:''}
+      ${can('clue')?`<button class="lbtn" data-l="clue"${!canUse||clueOn?' disabled':''}>Clue</button>`:''}
+      ${can('swap')?`<button class="lbtn" data-l="swap"${!canUse?' disabled':''}>Swap question</button>`:''}
+      <p class="lifehelp">${M().label}${can('second')?'':' (Descriptions only, no second chances)'}. ${lives?`Each costs one lifeline.`:`No lifelines yet. Earn one every ${LIFE_EVERY} correct.`} A round passed with help doesn't add to your streak.</p>
     </div>
     <p class="note">${esc(round.label)}${assisted?' · Lifeline used, so this round won’t add to your streak':''}</p>
     <div id="reveal"></div>`;
@@ -390,7 +414,7 @@ function render(){
   stage.querySelectorAll('.lbtn').forEach(b=>b.onclick=()=>useLife(b.dataset.l));
 }
 async function useLife(kind){
-  if(lives<1||answered||pendingMiss||swapping||!round)return;
+  if(lives<1||answered||pendingMiss||swapping||!round||!can(kind))return;
   const wasAssisted=assisted;
   lives--;assisted=true;score();
   if(kind==='desc'){showDesc=true;return render()}
@@ -412,7 +436,7 @@ async function useLife(kind){
 }
 function answer(i){
   if(answered||!round||pendingMiss||swapping||crossed.has(i))return;
-  if(!round.options[i].ok&&lives>0){
+  if(!round.options[i].ok&&lives>0&&can('second')){
     crossed.add(i);pendingMiss=true;render();
     $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked.</p><p>Spend a lifeline for a second chance? You'll pick again from what's left, and this round won't add to your streak.</p><div class="row"><button class="btn" id="second">Second chance (${lives} left)</button><button class="btn ghost" id="endrun">End run</button></div></div>`;
     $('second').onclick=()=>{lives--;assisted=true;pendingMiss=false;score();render()};
@@ -440,9 +464,9 @@ function finish(i){
     else{
       marks+='🟩';streak++;msg=`Linked! Streak ${streak}.`;
       if(streak%LIFE_EVERY===0)msg+=lives<LIFE_MAX?(lives++,' You earned a lifeline.'):' Lifelines are full, so no new one.';
-      if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best',best)}
+      if(mode==='free'&&streak>best){best=streak;store.set('hyperlinked-best'+sfx(diff),best)}
     }
-    if(mode==='daily')store.set('hyperlinked-daily',{date:today,start:trail[0],streak,marks,done:false});
+    if(mode==='daily')saveDaily({date:today,diff,start:trail[0],streak,marks,done:false});
     score();
     $('reveal').innerHTML=`<div class="reveal"><p class="verdict ok">${msg}</p>${quote}<div class="row"><button class="btn" id="go">Hop to ${esc(round.correct.title)} →</button>${readLink}</div></div>`;
     $('go').onclick=hop;$('go').focus();
@@ -451,7 +475,7 @@ function finish(i){
     let extra=`<div class="row"><button class="btn" id="again">New run</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
     let d=null;
     if(mode==='daily'){
-      d={date:today,start:trail[0],streak,marks,done:true};store.set('hyperlinked-daily',d);
+      d={date:today,diff,start:trail[0],streak,marks,done:true};saveDaily(d);
       extra=`${shareBlock(d)}<div class="row" style="margin-top:10px"><button class="btn ghost" id="again">Free play</button><button class="btn ghost" id="back">Home</button>${readLink}</div>`;
     }
     $('reveal').innerHTML=`<div class="reveal"><p class="verdict no">Not linked. Run over at ${streak}.</p><p>The link was <b>${esc(round.correct.title)}</b>.</p>${quote}${extra}</div>`;
@@ -518,13 +542,13 @@ async function hop(){
 }
 async function newGame(m,start){
   const my=++gen;mode=m;
-  streak=0;lives=0;trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
+  streak=0;lives=M().start;best=bestOf(diff);trail=[];visited=new Set();round=null;nextP=null;marks='';score();renderTrail();setTag();
   let a;
   if(m==='daily'){
     loading("Opening today's starting page…");
-    const order=shuffle(SEEDS,seeded(hashStr('daily|'+today)));
-    a=await loadSeed(my,order[0],seeded(hashStr('daily-retry|'+today)));
-    if(a&&my===gen)store.set('hyperlinked-daily',{date:today,start:a.title,streak:0,marks:'',done:false});
+    const order=shuffle(SEEDS,seeded(hashStr('daily|'+today+salt(diff))));
+    a=await loadSeed(my,order[0],seeded(hashStr('daily-retry|'+today+salt(diff))));
+    if(a&&my===gen)saveDaily({date:today,diff,start:a.title,streak:0,marks:'',done:false});
   }else{
     loading(start?`Opening ${start}…`:'Finding a starting page…');
     a=await loadSeed(my,start,Math.random,!!start);
