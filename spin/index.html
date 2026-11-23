@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spin-dle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a quiet museum gallery, curious and calm
+   IDEA: an object on a plinth under a spotlight, slowly revealed
+   PICTURE: the 3D object itself, filling most of the screen
+   COLOUR and TYPE: warm gallery paper and ink, Smithsonian-ish gold accent; Crimson Pro titles + system sans
+   LAYOUT: one screen: slim header, big viewer, view pips, six answer buttons */
+:root{color-scheme:light dark;
+  --bg:light-dark(#f4f1ea,#121315);--card:light-dark(#fffdf8,#1c1e21);--ink:light-dark(#1d1f22,#e8eaed);
+  --mute:light-dark(#62605a,#a3a29c);--rule:light-dark(#d6d0c4,#3a3c40);--acc:light-dark(#9a6b12,#e0b257);
+  --good:light-dark(#1d7a5c,#45c08f);--bad:light-dark(#c23b30,#ff8277);--plinth:light-dark(#ebe5d8,#191b1e)}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.app{height:100dvh;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--rule);flex:none}
+.brand b{display:block;font:600 26px/1 "Crimson Pro",Georgia,serif}
+.brand span{font-size:12px;color:var(--mute)}
+.seg{display:flex;border:1px solid var(--acc);border-radius:999px;overflow:hidden}
+.seg button{min-height:40px;padding:0 14px;font:inherit;font-size:14px;font-weight:600;border:0;background:transparent;color:var(--acc);cursor:pointer}
+.seg button.on{background:var(--acc);color:var(--card)}
+.view{position:relative;flex:1;min-height:180px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,var(--card),var(--plinth) 75%);border:1px solid var(--rule)}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--mute);font-size:14px;text-align:center;padding:20px;pointer-events:none}
+.status[hidden]{display:none}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--acc);animation:hop .9s ease-in-out infinite;flex:none}
+@keyframes hop{50%{transform:translateY(-8px);opacity:.5}}
+.tag{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--mute);background:color-mix(in srgb,var(--card) 80%,transparent);padding:3px 8px;border-radius:999px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.pips{display:flex;gap:6px}
+.pip{width:26px;height:8px;border-radius:4px;background:var(--rule)}
+.pip.on{background:var(--acc)}
+.pip.miss{background:var(--bad)}
+.pip.win{background:var(--good)}
+.cap{font-size:13px;color:var(--mute);margin:0;text-align:right}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:none}
+.opt{min-height:48px;padding:6px 12px;text-align:left;font:inherit;font-size:15px;font-weight:500;line-height:1.25;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:8px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt:disabled{cursor:default}
+.opt.wrong{border-color:var(--bad);color:var(--mute);text-decoration:line-through;background:color-mix(in srgb,var(--bad) 8%,var(--card))}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--card))}
+.opt.dim{opacity:.5}
+button:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:none}
+.btn{min-height:46px;padding:0 18px;font:inherit;font-size:15px;font-weight:600;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:var(--card);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.btn.ghost{background:transparent;color:var(--acc)}
+.btn:disabled{opacity:.45;cursor:default}
+.result{display:flex;flex-direction:column;gap:8px;flex:none}
+.result h2{font:600 26px/1.1 "Crimson Pro",Georgia,serif;margin:0}
+.verdict{font-weight:700;margin:0}
+.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
+.fact{margin:0;font-size:14px;color:var(--mute)}
+.fact a{color:var(--acc)}
+pre.share{margin:0;padding:8px 10px;background:var(--card);border:1px solid var(--rule);border-radius:6px;font:13px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.credit{font-size:11px;color:var(--mute);text-align:center;margin:0;flex:none}
+.credit a{color:inherit}
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:999px;font-weight:600;font-size:15px;color:#fff;background:var(--bad);box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20;white-space:nowrap}
+.toast[hidden]{display:none}
+@media(max-height:640px){.opt{min-height:42px;font-size:14px}.brand b{font-size:22px}.credit,pre.share{display:none}.view{min-height:140px}.result h2{font-size:22px}.fact{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.dot{animation:none}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>Spin-dle</b><span id="sub">Name the Smithsonian object</span></div>
+    <div class="seg" role="tablist"><button id="tDaily" class="on" role="tab">Daily</button><button id="tFree" role="tab">Free play</button></div>
+  </header>
+  <div class="view"><canvas id="cv" aria-label="3D view of the mystery object"></canvas><div class="status" id="status"><div class="dot"></div><span id="statusTxt">Loading from the Smithsonian…</span></div><span class="tag" id="tag" hidden></span></div>
+  <div class="bar"><div class="pips" id="pips"></div><p class="cap" id="cap"></p></div>
+  <div id="play">
+    <div class="opts" id="opts"></div>
+  </div>
+  <div class="row" id="moreRow"><button class="btn ghost" id="more">Show me more (−1 point)</button></div>
+  <p class="credit">3D scans: <a href="https://3d.si.edu/cc0" target="_blank" rel="noopener">Smithsonian Open Access</a> (CC0). Prototype with 9 objects.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script type="module">
+import {Viewer} from './viewer.js';
+
+// Hand-picked CC0 objects. Decoys are different kinds of things, so the shape is always the real clue.
+const OBJECTS=[
+  {id:'d8c62e5e-4ebc-11ea-b77f-2e728ce88125',name:'1903 Wright Flyer',decoys:['Spirit of St. Louis','Blériot XI monoplane','Hot-air balloon gondola','Sopwith Camel'],hint:'Air and Space Museum · 1903',fact:'The first powered, controlled airplane. Its first flight at Kitty Hawk on December 17, 1903 lasted 12 seconds.'},
+  {id:'6c69a6bb-55e6-4356-8725-120ff7f8d652',name:'Bell X-1 "Glamorous Glennis"',decoys:['North American X-15','Lockheed SR-71 Blackbird','Concorde','P-51 Mustang'],hint:'Air and Space Museum · 1946',fact:'On October 14, 1947, Chuck Yeager flew it faster than the speed of sound, the first airplane ever to do so.'},
+  {id:'d8c636ce-4ebc-11ea-b77f-2e728ce88125',name:'Space Shuttle Discovery',decoys:['Concorde','Boeing 747','SpaceShipOne','Saturn V rocket'],hint:'Air and Space Museum · flew 1984–2011',fact:'Discovery flew more missions than any other shuttle, including the 1990 launch of the Hubble Space Telescope.'},
+  {id:'d8c6457e-4ebc-11ea-b77f-2e728ce88125',name:'Apollo 11 Command Module "Columbia"',decoys:['Lunar Module "Eagle"','Skylab space station','Vostok 1 capsule','Mars Pathfinder lander'],hint:'Air and Space Museum · 1969',fact:'Columbia carried Neil Armstrong, Buzz Aldrin and Michael Collins to the Moon and back. It was the only part of the spacecraft to return to Earth.'},
+  {id:'e7514eea-3f12-490d-a2d0-999f2a1a70f7',name:'Apollo 11 crew hatch',decoys:['Bank vault door','Submarine hatch','Ship’s porthole','Washing machine door'],hint:'Air and Space Museum · 1969',fact:'The main hatch on Columbia. This "unified hatch" was redesigned after the 1967 Apollo 1 fire so crews could get out quickly.'},
+  {id:'ed99f44d-3c60-4111-b666-e2908e1b64ef',name:'Morse-Vail telegraph key',decoys:['Edison stock ticker','Bell’s first telephone','Typewriter','Stapler'],hint:'American History Museum · 1844',fact:'Made by Alfred Vail and believed to be from the first Baltimore–Washington telegraph line, demonstrated in 1844.'},
+  {id:'c7c58ff8-fd1f-4cf6-9813-6bca3cd0b8b3',name:'Charlie Parker’s alto saxophone',decoys:['Louis Armstrong’s trumpet','Benny Goodman’s clarinet','A French horn','A tuba'],hint:'African American History and Culture Museum · c. 1947',fact:'Charlie "Bird" Parker’s sax, with a sterling silver bell engraved with his name, made around 1947.'},
+  {id:'d8c623be-4ebc-11ea-b77f-2e728ce88125',name:'Triceratops skeleton ("Hatcher")',decoys:['Stegosaurus skeleton','Tyrannosaurus rex skeleton','Woolly mammoth skeleton','Saber-toothed cat skeleton'],hint:'Natural History Museum · found 1890',fact:'Hatcher was the first Triceratops ever put on display, and the first whole dinosaur skeleton the Smithsonian scanned in 3D.'},
+  {id:'341c96cd-f967-4540-8ed1-d3fc56d31f12',name:'Woolly mammoth skeleton',decoys:['Triceratops skeleton','Giant ground sloth skeleton','Blue whale skeleton','Irish elk skeleton'],hint:'Natural History Museum · Ice Age',fact:'Woolly mammoths roamed the cold steppes of the last Ice Age. A small population survived on Wrangel Island until about 4,000 years ago.'}
+];
+const STAGES=['Silhouette, end-on','Silhouette, side-on','Shape, turning','Full colour','Spin it yourself'];
+const POINTS=[5,4,3,2,1];
+
+const $=id=>document.getElementById(id);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const today=new Date().toLocaleDateString('en-CA');
+const prettyDay=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});
+const dayNum=Math.floor(Date.parse(today+'T00:00:00Z')/864e5);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hash=s=>{let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+const seeded=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const shuffle=(a,r=Math.random)=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=r()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+
+const viewer=new Viewer($('cv'));
+const dark=matchMedia('(prefers-color-scheme: dark)');
+viewer.setDark(dark.matches);dark.addEventListener?.('change',e=>viewer.setDark(e.matches));
+
+let mode='daily',obj=null,opts=[],stage=0,crossed=new Set(),done=false,marks=[],gen=0,freeOrder=[],freeIdx=0;
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,1400)}
+function pips(){
+  $('pips').innerHTML=STAGES.map((_,i)=>`<span class="pip${marks[i]==='win'?' win':marks[i]==='miss'?' miss':i<=stage?' on':''}"></span>`).join('');
+  $('cap').textContent=done?'':`View ${stage+1} of 5 · ${STAGES[stage]}`;
+}
+function renderOpts(){
+  $('play').innerHTML=`<div class="opts">${opts.map((o,i)=>`<button class="opt${crossed.has(i)?' wrong':''}" data-i="${i}"${crossed.has(i)||done?' disabled':''}>${esc(o)}</button>`).join('')}</div>`;
+  $('play').querySelectorAll('.opt').forEach(b=>b.onclick=()=>guess(+b.dataset.i));
+  $('moreRow').hidden=done;
+  $('more').disabled=stage>=4;
+  $('more').textContent=stage>=4?'This is the last view':'Show me more (−1 point)';
+}
+function setStage(n){
+  stage=n;viewer.setStage(n);
+  $('tag').hidden=n<4;$('tag').textContent=obj.hint;
+  pips();renderOpts();
+}
+async function start(o,m){
+  const my=++gen;mode=m;obj=o;stage=0;crossed=new Set();done=false;marks=[];
+  $('tDaily').classList.toggle('on',m==='daily');$('tFree').classList.toggle('on',m==='free');
+  $('sub').textContent=m==='daily'?`Daily · ${prettyDay}`:'Free play';
+  const r=m==='daily'?seeded(hash('spin|'+today)):Math.random;
+  const others=OBJECTS.filter(x=>x!==o).map(x=>x.name).filter(n=>!o.decoys.includes(n));
+  opts=shuffle([o.name,...shuffle(o.decoys,r).slice(0,4),...shuffle(others,r).slice(0,1)],r);
+  $('status').hidden=false;$('statusTxt').textContent='Loading from the Smithsonian…';
+  $('play').innerHTML='';$('moreRow').hidden=true;$('tag').hidden=true;pips();
+  try{await viewer.load(o.id)}
+  catch(e){
+    if(my!==gen)return;
+    $('statusTxt').textContent='Couldn’t load this object from the Smithsonian. Check your connection, or try free play.';
+    $('status').querySelector('.dot').hidden=true;return;
+  }
+  if(my!==gen)return;
+  $('status').hidden=true;$('status').querySelector('.dot').hidden=false;
+  // Leaving a daily part-way still counts as today's try.
+  if(m==='daily'){const d=store.get('spindle-daily');if(!d||d.date!==today)store.set('spindle-daily',{date:today,win:false,pts:0,share:`Spin-dle ${prettyDay}\nLeft early`})}
+  setStage(0);
+}
+function guess(i){
+  if(done||crossed.has(i))return;
+  if(opts[i]===obj.name){marks[stage]='win';return finish(true)}
+  crossed.add(i);marks[stage]='miss';
+  if(stage>=4)return finish(false);
+  toast('Not that one');setStage(stage+1);
+}
+$('more').onclick=()=>{if(!done&&stage<4){marks[stage]='skip';setStage(stage+1)}};
+function shareText(win){
+  const row=STAGES.map((_,i)=>marks[i]==='win'?'🟩':marks[i]==='miss'?'🟥':marks[i]==='skip'?'⬜':'⬛').join('');
+  return `Spin-dle ${prettyDay}\n${row} ${win?POINTS[stage]:0}/5`;
+}
+function finish(win){
+  done=true;
+  viewer.setStage(4);$('tag').hidden=false;$('tag').textContent=obj.hint;
+  const pts=win?POINTS[stage]:0;
+  if(mode==='daily')store.set('spindle-daily',{date:today,win,pts,share:shareText(win)});
+  pips();
+  $('moreRow').hidden=true;
+  $('play').innerHTML=`<div class="result">
+    <p class="verdict ${win?'ok':'no'}">${win?`Got it on view ${stage+1}: ${pts} point${pts===1?'':'s'}`:'Out of views'}</p>
+    <h2>${esc(obj.name)}</h2>
+    <p class="fact">${esc(obj.fact)} Drag to spin it. <a href="https://3d.si.edu/object/3d/${obj.id}" target="_blank" rel="noopener">See it at the Smithsonian</a></p>
+    ${mode==='daily'?`<pre class="share" id="shareTxt">${esc(shareText(win))}</pre>`:''}
+    <div class="row">${mode==='daily'?'<button class="btn" id="copy">Copy result</button>':''}<button class="btn${mode==='daily'?' ghost':''}" id="next">${mode==='daily'?'Free play':'Next object'}</button></div>
+  </div>`;
+  $('next').onclick=nextFree;
+  if($('copy'))$('copy').onclick=async()=>{
+    try{await navigator.clipboard.writeText(shareText(win));$('copy').textContent='Copied!'}
+    catch(e){const r=document.createRange();r.selectNodeContents($('shareTxt'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copy').textContent='Selected, press Ctrl+C'}
+  };
+}
+function dailyObj(){return OBJECTS[((dayNum%OBJECTS.length)+OBJECTS.length)%OBJECTS.length]}
+function nextFree(){
+  if(freeIdx>=freeOrder.length){freeOrder=shuffle(OBJECTS);freeIdx=0}
+  start(freeOrder[freeIdx++],'free');
+}
+function openDaily(){
+  const d=store.get('spindle-daily');
+  if(d&&d.date===today){
+    // Already played: show the object in full and the result.
+    start(dailyObj(),'daily').then(()=>{
+      done=true;viewer.setStage(4);$('tag').hidden=false;$('tag').textContent=obj.hint;
+      marks=[];stage=4;pips();$('cap').textContent='';$('moreRow').hidden=true;
+      $('play').innerHTML=`<div class="result"><p class="verdict ${d.win?'ok':'no'}">Today’s daily: ${d.pts}/5</p><h2>${esc(obj.name)}</h2><p class="fact">${esc(obj.fact)}</p><pre class="share">${esc(d.share)}</pre><div class="row"><button class="btn" id="next">Free play</button></div></div>`;
+      $('next').onclick=nextFree;
+    });
+    return;
+  }
+  start(dailyObj(),'daily');
+}
+$('tDaily').onclick=openDaily;
+$('tFree').onclick=nextFree;
+document.addEventListener('keydown',e=>{if(/^[1-6]$/.test(e.key))guess(+e.key-1)});
+openDaily();
+</script>
+</body>
+</html>
