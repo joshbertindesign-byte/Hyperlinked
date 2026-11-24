@@ -78,19 +78,23 @@ textarea{min-height:80px;resize:vertical}
   <p class="muted" id="summary" style="margin-top:8px">Loading…</p>
   <div class="tabs"><button class="tab on" data-t="review">Review</button><button class="tab" data-t="add">Add objects</button><button class="tab" data-t="pub">Published</button></div>
 
-  <section id="settings" class="card" hidden>
+  <form id="settings" class="card" method="post" action="#" autocomplete="on" hidden>
     <h2>Settings</h2>
-    <p class="muted">Saved only in this browser. The GitHub token needs <b>Contents: Read and write</b> on your Hyperlinked repo only (a fine-grained token). The Smithsonian key is optional and only used for browsing the catalog.</p>
-    <label>GitHub token<input type="password" id="sToken" autocomplete="off"></label>
-    <div class="grid2">
-      <label>Repository owner<input type="text" id="sOwner"></label>
-      <label>Repository<input type="text" id="sRepo"></label>
-      <label>Branch<input type="text" id="sBranch"></label>
-      <label>Data file<input type="text" id="sPath"></label>
-    </div>
-    <label>Smithsonian api.data.gov key (optional)<input type="password" id="sKey" autocomplete="off"></label>
-    <div class="row"><button class="btn" id="sSave">Save and reload</button><a class="btn ghost sm" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Make a GitHub token</a><a class="btn ghost sm" href="https://api.data.gov/signup/" target="_blank" rel="noopener">Get a Smithsonian key</a></div>
-  </section>
+    <p class="muted">The GitHub token needs <b>Contents: Read and write</b> on your Hyperlinked repo only (a fine-grained token). When you save, let your browser save it as a password: it will then fill it in on your other devices too.</p>
+    <label>Saved in your password manager as<input type="text" id="sUser" name="username" autocomplete="username" value="Spin-dle curator (GitHub token)" readonly></label>
+    <label>GitHub token<input type="password" id="sToken" name="password" autocomplete="current-password"></label>
+    <label>Smithsonian api.data.gov key (optional, for searching the catalog)<input type="text" id="sKey" name="si-key" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="row" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="sShare" style="width:20px;height:20px;flex:none"> <span style="flex:1">Share this key with all my devices (saved in your repo, which is public)</span></label>
+    <p class="muted" id="sKeyNote"></p>
+    <details><summary class="muted">Repository details</summary>
+    <div class="grid2" style="margin-top:8px">
+      <label>Repository owner<input type="text" id="sOwner" autocomplete="off"></label>
+      <label>Repository<input type="text" id="sRepo" autocomplete="off"></label>
+      <label>Branch<input type="text" id="sBranch" autocomplete="off"></label>
+      <label>Data file<input type="text" id="sPath" autocomplete="off"></label>
+    </div></details>
+    <div class="row"><button class="btn" id="sSave" type="submit">Save and reload</button><a class="btn ghost sm" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Make a GitHub token</a><a class="btn ghost sm" href="https://api.data.gov/signup/" target="_blank" rel="noopener">Get a Smithsonian key</a></div>
+  </form>
 
   <section id="pReview">
     <div id="empty" class="card" hidden><h2>Nothing to review</h2><p class="muted">Add some objects first: paste links from the Smithsonian's CC0 3D page, or browse the catalog.</p><div class="row"><button class="btn" data-go="add">Add objects</button></div></div>
@@ -159,13 +163,50 @@ function toast(m,ms=2200){const t=$('toast');t.textContent=m;t.hidden=false;clea
 const S=Object.assign({token:'',owner:'joshbertindesign-byte',repo:'Hyperlinked',branch:'main',path:'spin/objects.json',siKey:''},store.get('spincurate-settings')||{});
 $('sToken').value=S.token;$('sOwner').value=S.owner;$('sRepo').value=S.repo;$('sBranch').value=S.branch;$('sPath').value=S.path;$('sKey').value=S.siKey;
 $('setBtn').onclick=()=>{$('settings').hidden=!$('settings').hidden};
-$('sSave').onclick=()=>{store.set('spincurate-settings',{token:$('sToken').value.trim(),owner:$('sOwner').value.trim(),repo:$('sRepo').value.trim(),branch:$('sBranch').value.trim()||'main',path:$('sPath').value.trim(),siKey:$('sKey').value.trim()});location.reload()};
+// The Smithsonian key can be shared between devices through a small public file next to this page.
+const CONFIG_PATH=()=>S.path.replace(/[^/]*$/,'')+'curate/config.json';
+let shared={};
+const sharedP=fetch('config.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({})).then(c=>{
+  shared=c||{};
+  if(shared.siKey&&!S.siKey){S.siKey=shared.siKey;$('sKey').value=S.siKey}
+  $('sShare').checked=!!shared.siKey&&shared.siKey===S.siKey;
+  $('sKeyNote').textContent=shared.siKey?(shared.siKey===S.siKey?'This key is shared: your other devices get it automatically.':'Your repo has a different shared key; this device uses its own.'):'';
+});
+$('settings').onsubmit=async e=>{
+  e.preventDefault();
+  const next={token:$('sToken').value.trim(),owner:$('sOwner').value.trim(),repo:$('sRepo').value.trim(),branch:$('sBranch').value.trim()||'main',path:$('sPath').value.trim(),siKey:$('sKey').value.trim()};
+  store.set('spincurate-settings',next);Object.assign(S,next);
+  const want=$('sShare').checked&&next.siKey?next.siKey:'';
+  if(want!==(shared.siKey||'')){
+    if(!S.token){toast('Add the GitHub token first so the key can be shared',4000);return}
+    $('sSave').disabled=true;$('sSave').textContent='Saving…';
+    try{
+      const cur=await ghFile(CONFIG_PATH());
+      const cfg=Object.assign({},cur?JSON.parse(cur.text):{});
+      if(want)cfg.siKey=want;else delete cfg.siKey;
+      await ghWrite(CONFIG_PATH(),JSON.stringify(cfg,null,1)+'\n',cur&&cur.sha,want?'Spin-dle curator: share Smithsonian key':'Spin-dle curator: stop sharing Smithsonian key');
+    }catch(err){$('sSave').disabled=false;$('sSave').textContent='Save and reload';toast(err.message,5000);return}
+  }
+  // Reloading counts as "signing in", which is what prompts the browser to offer to save the token.
+  location.reload();
+};
 
 /* ---------- GitHub data file ---------- */
 const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
 const b64enc=s=>{const b=new TextEncoder().encode(s);let out='';for(let i=0;i<b.length;i+=0x8000)out+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(out)};
 const ghUrl=()=>`https://api.github.com/repos/${S.owner}/${S.repo}/contents/${S.path}`;
 const ghHead=()=>Object.assign({Accept:'application/vnd.github+json'},S.token?{Authorization:'Bearer '+S.token}:{});
+async function ghFile(path){
+  const r=await fetch(`https://api.github.com/repos/${S.owner}/${S.repo}/contents/${path}?ref=${encodeURIComponent(S.branch)}&t=${Date.now()}`,{headers:ghHead(),cache:'no-store'});
+  if(r.status===404)return null;
+  if(!r.ok)throw new Error(r.status===401?'GitHub token was rejected.':'GitHub error '+r.status);
+  const j=await r.json();return {sha:j.sha,text:b64dec(j.content)};
+}
+async function ghWrite(path,text,sha,message){
+  const body={message,content:b64enc(text),branch:S.branch};if(sha)body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${S.owner}/${S.repo}/contents/${path}`,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHead()),body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(r.status===401||r.status===403?'GitHub refused the save. Check the token has write access to this repo.':'GitHub error '+r.status);
+}
 async function ghGet(){
   const r=await fetch(ghUrl()+'?ref='+encodeURIComponent(S.branch)+'&t='+Date.now(),{headers:ghHead(),cache:'no-store'});
   if(!r.ok)throw new Error(r.status===404?'Data file not found. Check Settings.':r.status===401?'GitHub token was rejected.':'GitHub error '+r.status);
@@ -454,7 +495,9 @@ function renderPub(){
 
 /* ---------- start ---------- */
 (async()=>{
-  try{remote=await ghGet()}catch(e){$('summary').textContent=e.message+(S.token?'':' Add a GitHub token in Settings.');if(!S.token)$('settings').hidden=false}
+  // On a device without the token yet, open Settings so the browser's password manager can fill it in.
+  if(!S.token)$('settings').hidden=false;
+  try{remote=await ghGet()}catch(e){$('summary').textContent=e.message+(S.token?'':' Add a GitHub token in Settings.')}
   refresh();nextCandidate();
 })();
 </script>
