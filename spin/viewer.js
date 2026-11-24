@@ -55,6 +55,9 @@ export class Viewer {
     this.controls.enabled = false;
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
+    // On the "spin it yourself" view it keeps turning on its own until you touch it.
+    this.controls.autoRotateSpeed = 4.8;   // about the same pace as the turning clay and colour views
+    this.controls.addEventListener('start', () => { this.controls.autoRotate = false; });
     const draco = new DRACOLoader();
     draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
     this.loader = new GLTFLoader();
@@ -236,6 +239,7 @@ export class Viewer {
     if (force || n < 2 || !this.spinning) this.pivot.rotation.set(0, D(S.yaw), 0);
     this.spinning = S.spin;
     this.controls.enabled = !!S.orbit;
+    this.controls.autoRotate = !!S.orbit;
     this.frame();
     this.apply();
   }

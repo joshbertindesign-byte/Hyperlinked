@@ -34,6 +34,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
 .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);animation:hop .9s ease-in-out infinite;flex:none}
 @keyframes hop{50%{transform:translateY(-8px);opacity:.5}}
 .tag{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--mute);background:color-mix(in srgb,var(--card) 80%,transparent);padding:3px 8px;border-radius:999px}
+.drag{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;color:var(--card);background:color-mix(in srgb,var(--ink) 78%,transparent);padding:5px 12px;border-radius:999px;pointer-events:none;white-space:nowrap;animation:nudge 2.4s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateX(-50%)}50%{transform:translateX(calc(-50% + 6px))}}
+@media(prefers-reduced-motion:reduce){.drag{animation:none}}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
 .pips{display:flex;gap:6px}
 .pip{width:26px;height:8px;border-radius:4px;background:var(--rule)}
@@ -98,7 +101,7 @@ window.SPIN=(()=>{
     <div class="brand"><b>Spin-dle</b><span id="sub">Name the Smithsonian object</span></div>
     <div class="seg" role="tablist"><button id="tDaily" class="on" role="tab">Daily</button><button id="tFree" role="tab">Free play</button></div>
   </header>
-  <div class="view"><canvas id="cv" aria-label="3D view of the mystery object"></canvas><div class="status" id="status"><div class="dot" id="dot"></div><span id="statusTxt">Loading from the Smithsonian…</span></div><span class="tag" id="tag" hidden></span></div>
+  <div class="view"><canvas id="cv" aria-label="3D view of the mystery object"></canvas><div class="status" id="status"><div class="dot" id="dot"></div><span id="statusTxt">Loading from the Smithsonian…</span></div><span class="tag" id="tag" hidden></span><span class="drag" id="drag" hidden>↔ Drag to turn it</span></div>
   <div class="bar"><div class="pips" id="pips"></div><p class="cap" id="cap"></p></div>
   <div class="tries" id="tries"></div>
   <form class="guess" id="gform" hidden><input id="g" type="text" placeholder="What is it?" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-label="Your guess"><button class="btn" type="submit">Guess</button></form>
@@ -124,7 +127,9 @@ const viewer=new Viewer($('cv'));
 const dark=matchMedia('(prefers-color-scheme: dark)');
 viewer.setDark(dark.matches);dark.addEventListener?.('change',e=>viewer.setDark(e.matches));
 
-let OBJECTS=[],mode='daily',obj=null,stage=0,done=false,marks=[],tries=[],gen=0,freeOrder=[],freeIdx=0;
+let OBJECTS=[],mode='daily',obj=null,stage=0,done=false,marks=[],tries=[],gen=0,freeOrder=[],freeIdx=0,dragged=false;
+// The "drag to turn it" tip goes away once the player has touched the object.
+$('cv').addEventListener('pointerdown',()=>{dragged=true;$('drag').hidden=true});
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,1500)}
 function pips(){
@@ -135,13 +140,14 @@ function renderTries(){$('tries').innerHTML=tries.map(t=>`<span class="try${t.sk
 function playing(on){$('gform').hidden=!on;$('moreRow').hidden=!on;$('result').hidden=on}
 function setStage(n){
   stage=n;viewer.setStage(n);
+  $('drag').hidden=n<4||dragged;
   $('tag').hidden=n<4;$('tag').textContent=obj.hint||'';
   $('more').disabled=n>=4;
   $('more').textContent=n>=4?'This is the last view':'Show me more (−1 point)';
   pips();
 }
 async function start(o,m){
-  const my=++gen;mode=m;obj=o;stage=0;done=false;marks=[];tries=[];
+  const my=++gen;mode=m;obj=o;stage=0;done=false;marks=[];tries=[];dragged=false;$('drag').hidden=true;
   $('tDaily').classList.toggle('on',m==='daily');$('tFree').classList.toggle('on',m==='free');
   $('sub').textContent=m==='daily'?`Daily · ${prettyDay}`:'Free play';
   $('status').hidden=false;$('dot').hidden=false;$('statusTxt').textContent='Loading from the Smithsonian…';
@@ -182,11 +188,12 @@ function shareText(win){
 }
 function showResult(o,{verdict,ok,share,next}){
   viewer.setStage(4);$('tag').hidden=false;$('tag').textContent=o.hint||'';
+  $('drag').hidden=dragged;
   playing(false);$('cap').textContent='';
   $('result').innerHTML=`<div class="result">
     <p class="verdict ${ok?'ok':'no'}">${esc(verdict)}</p>
     <h2>${esc(o.name)}</h2>
-    <p class="fact">${esc(o.fact||'')} Drag to spin it. <a href="https://3d.si.edu/object/3d/${o.id}" target="_blank" rel="noopener">See it at the Smithsonian</a></p>
+    <p class="fact">${esc(o.fact||'')} <a href="https://3d.si.edu/object/3d/${o.id}" target="_blank" rel="noopener">See it at the Smithsonian</a></p>
     ${share?`<pre class="share" id="shareTxt">${esc(share)}</pre>`:''}
     <div class="row">${share?'<button class="btn" id="copy">Copy result</button>':''}<button class="btn${share?' ghost':''}" id="next">${esc(next)}</button></div>
   </div>`;
